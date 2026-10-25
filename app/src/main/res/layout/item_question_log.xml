@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="4dp">
+
+    <!-- Question Pill -->
+    <TextView
+        android:id="@+id/tvQuestionNum"
+        android:layout_width="56dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_pill"
+        android:gravity="center"
+        android:letterSpacing="0.08"
+        android:paddingVertical="4dp"
+        android:textColor="@color/text_primary"
+        android:textSize="12sp"
+        tools:text="Q 01" />
+
+    <!-- Relative Duration Visual Bar -->
+    <ProgressBar
+        android:id="@+id/pbDurationBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="4dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_weight="1"
+        android:max="100"
+        android:progress="60"
+        android:progressBackgroundTint="@color/amoled_surface_high"
+        android:progressTint="@color/accent_highlight" />
+
+    <!-- Badge for Fastest / Slowest -->
+    <TextView
+        android:id="@+id/tvDurationTag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.08"
+        android:textColor="@color/fastest_green"
+        android:textSize="10sp"
+        android:visibility="gone"
+        tools:text="FAST"
+        tools:visibility="visible" />
+
+    <!-- Monospaced Duration -->
+    <TextView
+        android:id="@+id/tvDuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.06"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        tools:text="02:14.3" />
+
+    <!-- Tag Button -->
+    <TextView
+        android:id="@+id/btnTagQuestion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_pill"
+        android:clickable="true"
+        android:focusable="true"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.06"
+        android:paddingStart="8dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="3dp"
+        android:text="TAG"
+        android:textColor="@color/accent_highlight"
+        android:textSize="10sp" />
+
+</LinearLayout>

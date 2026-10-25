@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base AMOLED Full Screen Immersive Theme (Native Android Material) -->
+    <style name="Theme.FullScreenTimer" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
+        <!-- AMOLED Pure Black Window Background -->
+        <item name="android:windowBackground">@color/amoled_black</item>
+        <item name="android:colorBackground">@color/amoled_black</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:statusBarColor">@color/amoled_black</item>
+        <item name="android:navigationBarColor">@color/amoled_black</item>
+
+        <!-- Display Cutout Short Edges (takes notch/camera cutout into full immersion) -->
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="p">shortEdges</item>
+
+        <!-- AMOLED Color Palette Mapping -->
+        <item name="android:colorPrimary">@color/text_primary</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+    </style>
+
+    <!-- Sleek AMOLED Bottom Sheet / Modal Dialog -->
+    <style name="Theme.FullScreenTimer.BottomSheet" parent="@android:style/Theme.Material.Dialog.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/amoled_surface</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+    </style>
+
+    <!-- Sleek Dark Alert Dialog Theme -->
+    <style name="Theme.FullScreenTimer.Dialog" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_dialog_card</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:colorPrimary">@color/text_primary</item>
+    </style>
+
+</resources>

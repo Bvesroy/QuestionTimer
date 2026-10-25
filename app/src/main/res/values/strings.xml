@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Question Timer</string>
+    <string name="default_session_name">JEE ADVANCED PHYSICS</string>
+    <string name="default_target_label">TARGET: 50</string>
+    <string name="target_format">QUESTION %1$d / %2$d</string>
+    <string name="target_simple_format">TARGET: %1$d</string>
+    <string name="target_unset">SET TARGET</string>
+    <string name="question_number_format">QUESTION %1$d</string>
+    <string name="timer_initial">00:00.0</string>
+
+    <!-- State cues -->
+    <string name="badge_ready">TAP ANYWHERE TO START</string>
+    <string name="badge_running">SOLVING • TAP ANYWHERE TO PAUSE</string>
+    <string name="badge_paused">PAUSED • TAP ANYWHERE FOR NEXT</string>
+
+    <!-- Controls -->
+    <string name="desc_discard">Discard Question</string>
+    <string name="desc_toggle">Play / Pause</string>
+    <string name="desc_history">History and Stats</string>
+    <string name="desc_settings">Settings</string>
+
+    <!-- History Bottom Sheet & Tabs -->
+    <string name="history_title">SESSION STATS</string>
+    <string name="history_subtitle">Question Timing Breakdown</string>
+    <string name="tab_current">CURRENT</string>
+    <string name="tab_history">HISTORY</string>
+    <string name="tab_analytics">ANALYTICS</string>
+    <string name="stat_solved">SOLVED</string>
+    <string name="stat_total_time">TOTAL TIME</string>
+    <string name="stat_avg_time">AVG / QUESTION</string>
+    <string name="stat_fastest">FASTEST</string>
+    <string name="stat_slowest">SLOWEST</string>
+    <string name="btn_new_session">NEW SESSION</string>
+    <string name="btn_switch_session">SWITCH SESSION</string>
+    <string name="btn_clear_history">CLEAR LOGS</string>
+    <string name="empty_history_message">No completed questions yet.\nTap screen to solve questions.</string>
+    <string name="btn_resume_session">RESUME</string>
+    <string name="label_active_session">ACTIVE</string>
+
+    <!-- Analytics Dashboard -->
+    <string name="filter_today">TODAY</string>
+    <string name="filter_7_days">7 DAYS</string>
+    <string name="filter_30_days">30 DAYS</string>
+    <string name="filter_all_time">ALL TIME</string>
+    <string name="analytics_total_sessions">TOTAL SESSIONS</string>
+    <string name="analytics_practice_time">PRACTICE TIME</string>
+    <string name="analytics_avg_session_duration">AVG DURATION</string>
+    <string name="analytics_avg_time_per_q">AVG / QUESTION</string>
+    <string name="analytics_fastest_session">FASTEST SESSION</string>
+    <string name="analytics_best_session">BEST-PERFORMING SESSION</string>
+    <string name="analytics_target_progress">TARGET PROGRESS</string>
+    <string name="chart_pace_trend">PACE TREND (LINE)</string>
+    <string name="chart_practice_time">PRACTICE BARS</string>
+
+    <!-- Settings Dialog -->
+    <string name="settings_title">SETTINGS</string>
+    <string name="settings_subtitle">Display &amp; Target Preferences</string>
+    <string name="settings_section_timer_size">TIMER DISPLAY SIZE</string>
+    <string name="size_small">SMALL</string>
+    <string name="size_medium">MEDIUM</string>
+    <string name="size_large">LARGE</string>
+    <string name="size_xlarge">XLARGE</string>
+
+    <string name="settings_section_targets">SESSION TARGETS</string>
+    <string name="target_time_per_q_label">TARGET TIME PER QUESTION</string>
+    <string name="target_time_per_q_hint">Seconds (e.g. 90 or 120)</string>
+    <string name="target_session_time_label">TARGET PRACTICE TIME</string>
+    <string name="target_session_time_hint">Minutes (e.g. 45 or 60)</string>
+    <string name="target_session_questions_label">TARGET QUESTIONS PER SESSION</string>
+    <string name="target_session_questions_hint">Questions (e.g. 50)</string>
+    <string name="settings_live_feedback_title">CURRENT PACE FEEDBACK</string>
+    <string name="settings_done">DONE</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_rename_title">RENAME SESSION</string>
+    <string name="dialog_rename_hint">Enter session name</string>
+    <string name="dialog_target_title">SET QUESTION TARGET</string>
+    <string name="dialog_target_hint">Total questions (e.g. 50)</string>
+    <string name="action_save">SAVE</string>
+    <string name="action_cancel">CANCEL</string>
+    <string name="action_clear">CLEAR</string>
+    <string name="action_confirm">CONFIRM</string>
+    <string name="action_discard_confirm">Discard current timer?</string>
+</resources>

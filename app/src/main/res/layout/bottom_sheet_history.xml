@@ -1,0 +1,1695 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_bottom_sheet"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="24dp">
+
+    <!-- Drag Handle -->
+    <View
+        android:layout_width="@dimen/drag_handle_width"
+        android:layout_height="@dimen/drag_handle_height"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="14dp"
+        android:background="@drawable/sheet_drag_handle" />
+
+    <!-- Top Header Bar -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="14dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvSheetSessionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.16"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                tools:text="JEE ADVANCED PHYSICS" />
+
+            <TextView
+                android:id="@+id/tvSheetSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:letterSpacing="0.08"
+                android:text="@string/history_subtitle"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnCloseSheet"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_close"
+            android:tint="@color/text_secondary" />
+    </RelativeLayout>
+
+    <!-- Full Mock Test Mode Banner Button -->
+    <Button
+        android:id="@+id/btnLaunchMockTest"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_pill_accent"
+        android:fontFamily="sans-serif-black"
+        android:letterSpacing="0.08"
+        android:text="🎯 START FULL 180-MIN JEE MOCK TEST"
+        android:textColor="@color/accent_running"
+        android:textSize="12sp" />
+
+    <!-- Top Navigation Tabs (CURRENT, HISTORY, ANALYTICS) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnTabCurrent"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_selected"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:letterSpacing="0.12"
+            android:text="@string/tab_current"
+            android:textColor="@color/text_primary"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/btnTabHistory"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_marginHorizontal="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_unselected"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:letterSpacing="0.12"
+            android:text="@string/tab_history"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/btnTabAnalytics"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_unselected"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:letterSpacing="0.12"
+            android:text="@string/tab_analytics"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- ============================================== -->
+            <!-- TAB 1: CURRENT ACTIVE SESSION                  -->
+            <!-- ============================================== -->
+            <LinearLayout
+                android:id="@+id/layoutTabCurrent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="visible">
+
+                <!-- Elevated Current Session Stats Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.12"
+                                android:text="@string/stat_solved"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="@dimen/text_stat_label" />
+
+                            <TextView
+                                android:id="@+id/tvStatSolved"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:textColor="@color/text_primary"
+                                android:textSize="@dimen/text_stat_value"
+                                tools:text="14 / 50" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="12dp"
+                            android:background="@color/amoled_divider" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.12"
+                                android:text="@string/stat_total_time"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="@dimen/text_stat_label" />
+
+                            <TextView
+                                android:id="@+id/tvStatTotalTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/text_primary"
+                                android:textSize="@dimen/text_stat_value"
+                                tools:text="28:45" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="12dp"
+                        android:background="@color/amoled_divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.12"
+                                android:text="@string/stat_avg_time"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="@dimen/text_stat_label" />
+
+                            <TextView
+                                android:id="@+id/tvStatAvgTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                tools:text="02:03.2" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.12"
+                                android:text="@string/stat_fastest"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="@dimen/text_stat_label" />
+
+                            <TextView
+                                android:id="@+id/tvStatFastest"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/accent_running"
+                                android:textSize="16sp"
+                                tools:text="00:45.1" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Action Bar: New / Switch / Notes -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnNewSession"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_button_tonal"
+                        android:letterSpacing="0.1"
+                        android:text="@string/btn_new_session"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp" />
+
+                    <Button
+                        android:id="@+id/btnSwitchSession"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginHorizontal="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_button_tonal"
+                        android:letterSpacing="0.1"
+                        android:text="@string/btn_switch_session"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp" />
+
+                    <Button
+                        android:id="@+id/btnCurrentSessionNotes"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_button_tonal"
+                        android:letterSpacing="0.1"
+                        android:text="NOTES"
+                        android:textColor="@color/accent_highlight"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- Question Timing Breakdown List -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.14"
+                        android:text="QUESTION BREAKDOWN"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11sp" />
+
+                    <Button
+                        android:id="@+id/btnClearLogs"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:background="@drawable/bg_button_text"
+                        android:letterSpacing="0.1"
+                        android:paddingHorizontal="8dp"
+                        android:text="@string/btn_clear_history"
+                        android:textColor="@color/accent_discard"
+                        android:textSize="10sp" />
+                </RelativeLayout>
+
+                <TextView
+                    android:id="@+id/tvEmptyLogs"
+                    android:layout_width="match_parent"
+                    android:layout_height="140dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="4dp"
+                    android:text="@string/empty_history_message"
+                    android:textColor="@color/text_hint"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
+                <ListView
+                    android:id="@+id/lvQuestionLogs"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:divider="@null"
+                    android:dividerHeight="0dp"
+                    android:nestedScrollingEnabled="true"
+                    android:overScrollMode="never" />
+
+            </LinearLayout>
+
+            <!-- ============================================== -->
+            <!-- TAB 2: DATE-GROUPED SESSION HISTORY            -->
+            <!-- ============================================== -->
+            <LinearLayout
+                android:id="@+id/layoutTabHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Top Action & Compare Row -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:id="@+id/tvHistoryHeaderSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.12"
+                        android:text="ALL RECORDED SESSIONS"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11sp" />
+
+                    <Button
+                        android:id="@+id/btnOpenComparison"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:background="@drawable/bg_button_tonal"
+                        android:letterSpacing="0.08"
+                        android:paddingHorizontal="10dp"
+                        android:text="COMPARE SESSIONS"
+                        android:textColor="@color/accent_highlight"
+                        android:textSize="10sp" />
+                </RelativeLayout>
+
+                <!-- Search Bar -->
+                <EditText
+                    android:id="@+id/etHistorySearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_pill"
+                    android:drawableStart="@drawable/ic_history"
+                    android:drawablePadding="8dp"
+                    android:hint="Search title, notes, or subject..."
+                    android:inputType="text"
+                    android:paddingHorizontal="12dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:textSize="12sp" />
+
+                <!-- Subject Filter Pills Row -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:overScrollMode="never"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/filterSubAll"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/bg_pill_selected"
+                            android:gravity="center"
+                            android:paddingHorizontal="10dp"
+                            android:text="All Subjects"
+                            android:textColor="@color/accent_highlight"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/filterSubMath"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:gravity="center"
+                            android:paddingHorizontal="10dp"
+                            android:text="Mathematics"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/filterSubPhysics"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:gravity="center"
+                            android:paddingHorizontal="10dp"
+                            android:text="Physics"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/filterSubChem"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:gravity="center"
+                            android:paddingHorizontal="10dp"
+                            android:text="Chemistry"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/filterSubBio"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:gravity="center"
+                            android:paddingHorizontal="10dp"
+                            android:text="Biology"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/filterSubGeneral"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:gravity="center"
+                            android:paddingHorizontal="10dp"
+                            android:text="General"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp" />
+
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <!-- Dynamic container where date groups are inflated -->
+                <LinearLayout
+                    android:id="@+id/containerDateGroupedSessions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/tvEmptyAllSessions"
+                    android:layout_width="match_parent"
+                    android:layout_height="140dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="4dp"
+                    android:text="No matching sessions found."
+                    android:textColor="@color/text_hint"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <!-- ============================================== -->
+            <!-- TAB 3: DEDICATED ANALYTICS DASHBOARD           -->
+            <!-- ============================================== -->
+            <LinearLayout
+                android:id="@+id/layoutTabAnalytics"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Time Range Filter Pills -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnFilterToday"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="3dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:gravity="center"
+                        android:letterSpacing="0.1"
+                        android:text="@string/filter_today"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/btnFilter7Days"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_marginHorizontal="3dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_pill_selected"
+                        android:gravity="center"
+                        android:letterSpacing="0.1"
+                        android:text="@string/filter_7_days"
+                        android:textColor="@color/accent_highlight"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/btnFilter30Days"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_marginHorizontal="3dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:gravity="center"
+                        android:letterSpacing="0.1"
+                        android:text="@string/filter_30_days"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/btnFilterAll"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_marginStart="3dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_pill_unselected"
+                        android:gravity="center"
+                        android:letterSpacing="0.1"
+                        android:text="@string/filter_all_time"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                </LinearLayout>
+
+                <!-- Chart Toggle Selector & Interactive Chart -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:overScrollMode="never"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/btnChartPace"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:layout_marginEnd="6dp"
+                                android:background="@drawable/bg_pill_accent"
+                                android:gravity="center"
+                                android:letterSpacing="0.08"
+                                android:paddingHorizontal="10dp"
+                                android:text="@string/chart_pace_trend"
+                                android:textColor="@color/accent_running"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/btnChartPractice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:layout_marginEnd="6dp"
+                                android:background="@drawable/bg_pill_unselected"
+                                android:gravity="center"
+                                android:letterSpacing="0.08"
+                                android:paddingHorizontal="10dp"
+                                android:text="@string/chart_practice_time"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/btnChartMovingAvg"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:layout_marginEnd="6dp"
+                                android:background="@drawable/bg_pill_unselected"
+                                android:gravity="center"
+                                android:letterSpacing="0.08"
+                                android:paddingHorizontal="10dp"
+                                android:text="MOVING AVG"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/btnChartHeatmap"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:background="@drawable/bg_pill_unselected"
+                                android:gravity="center"
+                                android:letterSpacing="0.08"
+                                android:paddingHorizontal="10dp"
+                                android:text="HEATMAP"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                        </LinearLayout>
+                    </HorizontalScrollView>
+
+                    <!-- Custom Analytics Canvas Chart -->
+                    <com.example.timerapp.ui.AnalyticsChartView
+                        android:id="@+id/analyticsChartView"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp" />
+
+                </LinearLayout>
+
+                <!-- =========================================== -->
+                <!-- JEE MAIN vs JEE ADVANCED TARGET ANALYTICS   -->
+                <!-- =========================================== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Profile Segmented Toggle -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnProfileJeeMain"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_selected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:letterSpacing="0.08"
+                            android:text="JEE MAIN (144s)"
+                            android:textColor="@color/accent_highlight"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/btnProfileJeeAdv"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:letterSpacing="0.08"
+                            android:text="JEE ADVANCED (180s)"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvJeeProfileTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:fontFamily="sans-serif-black"
+                        android:letterSpacing="0.1"
+                        android:text="JEE MAIN 2026 BENCHMARK"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+
+                    <!-- Score and Accuracy Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_pill_accent"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="PROJECTED SCORE"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvJeeEstimatedScore"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-black"
+                                android:text="+192 / 300"
+                                android:textColor="@color/accent_running"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ACCURACY &amp; SOLVED"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvJeeAccuracy"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-black"
+                                android:text="84.5% (48 Solved)"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Subject Breakdown Details -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:letterSpacing="0.08"
+                        android:text="SUBJECT BREAKDOWN &amp; SPEED"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/tvJeePhysicsBreakdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="• Physics: 16 Qs • Avg 132s (-12s faster) • +60 pts"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tvJeeChemistryBreakdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="• Chemistry: 20 Qs • Avg 105s (-39s faster) • +76 pts"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tvJeeMathBreakdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="• Mathematics: 12 Qs • Avg 165s (+21s slower) • +44 pts"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp" />
+
+                    <!-- Over-Target Question List -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:letterSpacing="0.08"
+                        android:text="OVER-TARGET QUESTIONS (>144s)"
+                        android:textColor="@color/accent_paused"
+                        android:textSize="10sp" />
+
+                    <LinearLayout
+                        android:id="@+id/containerOverTargetQuestions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="vertical" />
+                </LinearLayout>
+
+                <!-- =========================================== -->
+                <!-- OFFLINE STUDY COACH (AI RECOMMENDATIONS)    -->
+                <!-- =========================================== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
+                        android:letterSpacing="0.1"
+                        android:text="🧠 OFFLINE STUDY COACH"
+                        android:textColor="@color/accent_highlight"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif"
+                        android:text="Personalized algorithmic insights on speed, stamina, and error patterns."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <LinearLayout
+                        android:id="@+id/containerStudyCoachCards"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="vertical" />
+                </LinearLayout>
+
+                <!-- =========================================== -->
+                <!-- 1. Weekly & Monthly Reports Card            -->
+                <!-- =========================================== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp">
+
+                        <Button
+                            android:id="@+id/btnReportPrev"
+                            android:layout_width="wrap_content"
+                            android:layout_height="28dp"
+                            android:layout_alignParentStart="true"
+                            android:background="@drawable/bg_button_subtle"
+                            android:paddingHorizontal="8dp"
+                            android:text="◀ PREV"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="9sp" />
+
+                        <TextView
+                            android:id="@+id/tvReportPeriodTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_centerInParent="true"
+                            android:fontFamily="sans-serif-medium"
+                            android:letterSpacing="0.1"
+                            android:textColor="@color/text_primary"
+                            android:textSize="11sp"
+                            tools:text="CURRENT PERIOD REPORT" />
+
+                        <Button
+                            android:id="@+id/btnReportNext"
+                            android:layout_width="wrap_content"
+                            android:layout_height="28dp"
+                            android:layout_alignParentEnd="true"
+                            android:background="@drawable/bg_button_subtle"
+                            android:paddingHorizontal="8dp"
+                            android:text="NEXT ▶"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="9sp" />
+                    </RelativeLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.08"
+                                android:text="TOTAL TIME"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvReportCurrentTotal"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/text_primary"
+                                android:textSize="15sp"
+                                tools:text="4h 12m" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="10dp"
+                            android:background="@color/amoled_divider" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.08"
+                                android:text="PREV PERIOD"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvReportPrevTotal"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="15sp"
+                                tools:text="3h 20m" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="10dp"
+                            android:background="@color/amoled_divider" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.08"
+                                android:text="CHANGE"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvReportPctChange"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:textColor="@color/accent_running"
+                                android:textSize="15sp"
+                                tools:text="+26.0%" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvReportBestDay"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:letterSpacing="0.04"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"
+                        tools:text="Peak Practice Day: Tuesday (1h 45m)" />
+
+                    <TextView
+                        android:id="@+id/tvReportSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:lineSpacingExtra="2dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp"
+                        tools:text="Solid progress this period! Solving volume increased while maintaining healthy pace." />
+                </LinearLayout>
+
+                <!-- =========================================== -->
+                <!-- 2. Consistency & Focus Score Cards          -->
+                <!-- =========================================== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <!-- Consistency Score Card -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_dialog_card"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:letterSpacing="0.08"
+                            android:text="CONSISTENCY"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/tvConsistencyScore"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:textColor="@color/accent_running"
+                            android:textSize="22sp"
+                            tools:text="88 / 100" />
+
+                        <ProgressBar
+                            android:id="@+id/pbConsistency"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="4dp"
+                            android:layout_marginTop="4dp"
+                            android:max="100"
+                            android:progress="88"
+                            android:progressTint="@color/accent_running" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Active days + streak adherence"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="9sp" />
+                    </LinearLayout>
+
+                    <!-- Focus Score Card -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_dialog_card"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:letterSpacing="0.08"
+                            android:text="FOCUS SCORE"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/tvFocusScore"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:textColor="@color/accent_highlight"
+                            android:textSize="22sp"
+                            tools:text="92 / 100" />
+
+                        <ProgressBar
+                            android:id="@+id/pbFocus"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="4dp"
+                            android:layout_marginTop="4dp"
+                            android:max="100"
+                            android:progress="92"
+                            android:progressTint="@color/accent_highlight" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Active solving vs idle flow ratio"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="9sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- =========================================== -->
+                <!-- 3. Best Practice Time Analysis Card         -->
+                <!-- =========================================== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.1"
+                        android:text="PRACTICE TIME-OF-DAY &amp; PEAK SPEED"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="10sp" />
+
+                    <!-- Morning, Afternoon, Evening, Night Bars -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="vertical">
+
+                        <!-- Early Morning -->
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Early Morning (4am - 8am)"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+                            <TextView
+                                android:id="@+id/tvSlotEarlyMorningSpeed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp"
+                                tools:text="74s avg" />
+                        </RelativeLayout>
+                        <ProgressBar
+                            android:id="@+id/pbSlotEarlyMorning"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="4dp"
+                            android:layout_marginTop="3dp"
+                            android:layout_marginBottom="8dp"
+                            android:max="100"
+                            android:progress="40"
+                            android:progressTint="@color/accent_highlight" />
+
+                        <!-- Morning -->
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Morning (8am - 12pm)"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+                            <TextView
+                                android:id="@+id/tvSlotMorningSpeed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:textColor="@color/accent_running"
+                                android:textSize="10sp"
+                                tools:text="★ 62s avg (Fastest)" />
+                        </RelativeLayout>
+                        <ProgressBar
+                            android:id="@+id/pbSlotMorning"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="4dp"
+                            android:layout_marginTop="3dp"
+                            android:layout_marginBottom="8dp"
+                            android:max="100"
+                            android:progress="85"
+                            android:progressTint="@color/accent_running" />
+
+                        <!-- Afternoon -->
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Afternoon (12pm - 5pm)"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+                            <TextView
+                                android:id="@+id/tvSlotAfternoonSpeed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp"
+                                tools:text="88s avg" />
+                        </RelativeLayout>
+                        <ProgressBar
+                            android:id="@+id/pbSlotAfternoon"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="4dp"
+                            android:layout_marginTop="3dp"
+                            android:layout_marginBottom="8dp"
+                            android:max="100"
+                            android:progress="55"
+                            android:progressTint="@color/accent_highlight" />
+
+                        <!-- Evening & Night -->
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Evening &amp; Night (5pm - 4am)"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+                            <TextView
+                                android:id="@+id/tvSlotNightSpeed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp"
+                                tools:text="79s avg" />
+                        </RelativeLayout>
+                        <ProgressBar
+                            android:id="@+id/pbSlotNight"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="4dp"
+                            android:layout_marginTop="3dp"
+                            android:max="100"
+                            android:progress="70"
+                            android:progressTint="@color/accent_highlight" />
+
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- =========================================== -->
+                <!-- 4. Personal Records Card                    -->
+                <!-- =========================================== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.1"
+                        android:text="PERSONAL RECORDS (ALL-TIME)"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="10sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Longest Session"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+                            <TextView
+                                android:id="@+id/tvPrLongestSession"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                tools:text="1h 24m" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Most Daily Practice"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+                            <TextView
+                                android:id="@+id/tvPrMostDaily"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                tools:text="3h 15m" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Fastest Pace"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+                            <TextView
+                                android:id="@+id/tvPrFastestPace"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/accent_running"
+                                android:textSize="13sp"
+                                tools:text="45s / Q" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvPrLongestStreak"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="sans-serif-medium"
+                            android:textColor="@color/accent_paused"
+                            android:textSize="11sp"
+                            tools:text="🔥 Longest Streak: 7 Days" />
+
+                        <TextView
+                            android:id="@+id/tvPrMostSessionsDay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp"
+                            tools:text="Most Sessions in 1 Day: 5" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Statistical Overview Cards -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.14"
+                    android:text="PERFORMANCE OVERVIEW"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="11sp" />
+
+                <!-- Grid of Stats -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Row 1: Total Sessions & Total Practice Time -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.1"
+                                android:text="@string/analytics_total_sessions"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvAnalyticsTotalSessions"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                tools:text="8" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="12dp"
+                            android:background="@color/amoled_divider" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.1"
+                                android:text="@string/analytics_practice_time"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvAnalyticsTotalTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/text_primary"
+                                android:textSize="18sp"
+                                tools:text="3h 45m" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="12dp"
+                        android:background="@color/amoled_divider" />
+
+                    <!-- Row 2: Avg Duration & Avg Time Per Q -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.1"
+                                android:text="@string/analytics_avg_session_duration"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvAnalyticsAvgDuration"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                tools:text="28m 10s" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginHorizontal="12dp"
+                            android:background="@color/amoled_divider" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.1"
+                                android:text="@string/analytics_avg_time_per_q"
+                                android:textColor="@color/text_tertiary"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:id="@+id/tvAnalyticsAvgTimePerQ"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:textColor="@color/accent_running"
+                                android:textSize="16sp"
+                                tools:text="01:24.5" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Best & Fastest Highlights Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.1"
+                        android:text="@string/analytics_fastest_session"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/tvAnalyticsFastestSession"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        tools:text="Session 2 (Avg 58s / Q • 24 Qs)" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="10dp"
+                        android:background="@color/amoled_divider" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.1"
+                        android:text="@string/analytics_best_session"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/tvAnalyticsBestSession"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="@color/accent_running"
+                        android:textSize="14sp"
+                        tools:text="JEE ADVANCED PHYSICS (42 Qs • 82s avg)" />
+
+                    <!-- Criteria Explanation Badge -->
+                    <TextView
+                        android:id="@+id/tvBestCriteriaBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_pill"
+                        android:letterSpacing="0.06"
+                        android:text="Criteria: Highest question volume with sub-target pace (&lt;120s/Q)"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
+                <!-- Target Progress Indicator Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_dialog_card"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.1"
+                        android:text="@string/analytics_target_progress"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/tvAnalyticsProgressSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        tools:text="Questions: 64 Solved • 85% of weekly practice target" />
+
+                    <ProgressBar
+                        android:id="@+id/pbTargetProgress"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="6dp"
+                        android:layout_marginTop="8dp"
+                        android:max="100"
+                        android:progress="85"
+                        android:progressTint="@color/accent_highlight" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

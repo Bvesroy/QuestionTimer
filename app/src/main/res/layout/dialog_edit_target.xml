@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog_card"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.16"
+        android:text="@string/dialog_target_title"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp" />
+
+    <EditText
+        android:id="@+id/etTargetNumber"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_pill"
+        android:hint="@string/dialog_target_hint"
+        android:importantForAutofill="no"
+        android:inputType="number"
+        android:letterSpacing="0.08"
+        android:maxLength="4"
+        android:maxLines="1"
+        android:paddingHorizontal="16dp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_hint"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnClearTarget"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_button_text"
+            android:letterSpacing="0.1"
+            android:paddingHorizontal="12dp"
+            android:text="@string/action_clear"
+            android:textColor="@color/accent_discard" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/btnCancelTarget"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_button_text"
+            android:letterSpacing="0.1"
+            android:paddingHorizontal="12dp"
+            android:text="@string/action_cancel"
+            android:textColor="@color/text_secondary" />
+
+        <Button
+            android:id="@+id/btnSaveTarget"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_button_tonal"
+            android:letterSpacing="0.1"
+            android:paddingHorizontal="16dp"
+            android:text="@string/action_save"
+            android:textColor="@color/text_primary" />
+
+    </LinearLayout>
+
+</LinearLayout>

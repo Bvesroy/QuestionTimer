@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AMOLED Palette -->
+    <color name="amoled_black">#000000</color>
+    <color name="amoled_surface">#121212</color>
+    <color name="amoled_surface_elevated">#1C1C1E</color>
+    <color name="amoled_surface_high">#2C2C2E</color>
+    <color name="amoled_surface_border">#2C2C2E</color>
+    <color name="amoled_divider">#222224</color>
+
+    <!-- Typography Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#8E8E93</color>
+    <color name="text_tertiary">#636366</color>
+    <color name="text_hint">#48484A</color>
+
+    <!-- Accent & State Colors -->
+    <color name="accent_running">#30D158</color>
+    <color name="accent_running_bg">#1A30D158</color>
+    <color name="accent_paused">#FF9F0A</color>
+    <color name="accent_paused_bg">#1AFF9F0A</color>
+    <color name="accent_idle">#8E8E93</color>
+    <color name="accent_idle_bg">#1A8E8E93</color>
+    <color name="accent_discard">#FF453A</color>
+    <color name="accent_discard_bg">#1AFF453A</color>
+    <color name="accent_highlight">#0A84FF</color>
+    <color name="accent_highlight_bg">#1A0A84FF</color>
+
+    <!-- Interactive & Overlay -->
+    <color name="button_subtle_bg">#1AFFFFFF</color>
+    <color name="button_subtle_pressed">#33FFFFFF</color>
+    <color name="ripple_dark">#26FFFFFF</color>
+    <color name="scrim_dark">#B3000000</color>
+    <color name="fastest_green">#34C759</color>
+    <color name="slowest_amber">#FF9500</color>
+</resources>

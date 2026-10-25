@@ -1,0 +1,77 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Dark AMOLED Circular Base -->
+    <path
+        android:fillColor="#0D0E11"
+        android:pathData="M54,4 C26.386,4 4,26.386 4,54 C4,81.614 26.386,104 54,104 C81.614,104 104,81.614 104,54 C104,26.386 81.614,4 54,4 Z" />
+
+    <!-- Outer Subtle Precision Border Ring -->
+    <path
+        android:strokeColor="#24262B"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,8 C28.595,8 8,28.595 8,54 C8,79.405 28.595,100 54,100 C79.405,100 100,79.405 100,54 C100,28.595 79.405,8 54,8 Z" />
+
+    <!-- Stopwatch Top Crown Pusher -->
+    <path
+        android:fillColor="#8E8E93"
+        android:pathData="M50,10 L58,10 L58,17 L50,17 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,6 C48,4.895 48.895,4 50,4 L58,4 C59.105,4 60,4.895 60,6 L60,10 L48,10 Z" />
+
+    <!-- Angled Lap Pusher at 2 o'clock -->
+    <path
+        android:fillColor="#8E8E93"
+        android:pathData="M78.5,19.5 L84.2,25.2 L79.9,29.4 L74.3,23.8 Z" />
+
+    <!-- Active Timer Glowing Track Ring -->
+    <path
+        android:strokeColor="#1A30D158"
+        android:strokeWidth="7"
+        android:fillColor="#00000000"
+        android:pathData="M54,22 C71.673,22 86,36.327 86,54 C86,71.673 71.673,86 54,86 C36.327,86 22,71.673 22,54 C22,36.327 36.327,22 54,22 Z" />
+
+    <!-- Dynamic Stopwatch Progress Arc (0 to ~270 degrees) -->
+    <path
+        android:strokeColor="#30D158"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,22 C71.673,22 86,36.327 86,54 C86,71.673 71.673,86 54,86 C40.8,86 29.5,78 24.5,66.5" />
+
+    <!-- Inner Dial Subtle Ring -->
+    <path
+        android:strokeColor="#1C1D22"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"
+        android:pathData="M54,34 C65.046,34 74,42.954 74,54 C74,65.046 65.046,74 54,74 C42.954,74 34,65.046 34,54 C34,42.954 42.954,34 54,34 Z" />
+
+    <!-- Geometric Dial Tick Marks (12, 3, 6, 9 o'clock) -->
+    <path
+        android:strokeColor="#636366"
+        android:strokeWidth="2"
+        android:pathData="M54,36 L54,41 M72,54 L67,54 M54,72 L54,67 M36,54 L41,54" />
+
+    <!-- Modern Center Pivot Point -->
+    <path
+        android:fillColor="#0A84FF"
+        android:pathData="M54,51 C55.657,51 57,52.343 57,54 C57,55.657 55.657,57 54,57 C52.343,57 51,55.657 51,54 C51,52.343 52.343,51 54,51 Z" />
+
+    <!-- Minimalist Precision Timer Needle -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L66,42" />
+
+    <!-- Accent Tip Point on Needle -->
+    <path
+        android:fillColor="#30D158"
+        android:pathData="M66,42 C66.828,42 67.5,41.328 67.5,40.5 C67.5,39.672 66.828,39 66,39 C65.172,39 64.5,39.672 64.5,40.5 C64.5,41.328 65.172,42 66,42 Z" />
+
+</vector>

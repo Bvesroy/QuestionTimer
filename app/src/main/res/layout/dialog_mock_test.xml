@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootMockTest"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/amoled_black"
+    android:padding="16dp">
+
+    <!-- Top Bar: Title, Live 180-min Countdown Clock, Submit Button -->
+    <LinearLayout
+        android:id="@+id/mockTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvMockTestTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.12"
+                android:text="JEE MAIN FULL MOCK TEST"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <!-- Remaining Exam Countdown Clock -->
+            <TextView
+                android:id="@+id/tvExamCountdownClock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.06"
+                android:text="TIME LEFT: 02:59:50"
+                android:textColor="@color/accent_running"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSubmitMockTest"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_pill_accent"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="0.08"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:text="SUBMIT TEST"
+            android:textColor="@color/accent_running"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Main Content Container for Active Test -->
+    <LinearLayout
+        android:id="@+id/layoutMockActiveTest"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/layoutBottomNav"
+        android:layout_below="@id/mockTopBar"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical">
+
+        <!-- Section Tabs: Physics, Chemistry, Math -->
+        <LinearLayout
+            android:id="@+id/layoutSectionTabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tabPhysics"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_selected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-bold"
+                android:gravity="center"
+                android:paddingTop="7dp"
+                android:paddingBottom="7dp"
+                android:text="PHYSICS (25)"
+                android:textColor="@color/accent_highlight"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tabChemistry"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-bold"
+                android:gravity="center"
+                android:paddingTop="7dp"
+                android:paddingBottom="7dp"
+                android:text="CHEMISTRY (25)"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tabMath"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_pill_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-bold"
+                android:gravity="center"
+                android:paddingTop="7dp"
+                android:paddingBottom="7dp"
+                android:text="MATH (25)"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Question Status Overview & Navigator Grid (1..25) -->
+        <TextView
+            android:id="@+id/tvSectionHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.1"
+            android:text="QUESTION PALETTE (25 QUESTIONS)"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scrollbars="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- 25 Questions Grid Container -->
+                <GridLayout
+                    android:id="@+id/gridQuestionPalette"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:alignmentMode="alignMargins"
+                    android:columnCount="5"
+                    android:useDefaultMargins="true" />
+
+                <!-- Active Question Action Card -->
+                <LinearLayout
+                    android:id="@+id/cardActiveQuestion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_card_border"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvActiveQuestionTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
+                        android:letterSpacing="0.12"
+                        android:text="QUESTION 1"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/tvActiveQuestionStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Status: Not Visited • Target: 144s"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <!-- Quick Answer Simulation Actions -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnMarkAnswered"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_accent"
+                            android:fontFamily="sans-serif-bold"
+                            android:minHeight="0dp"
+                            android:minWidth="0dp"
+                            android:text="✓ ANSWER"
+                            android:textColor="@color/accent_running"
+                            android:textSize="11sp" />
+
+                        <Button
+                            android:id="@+id/btnMarkReview"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:fontFamily="sans-serif-bold"
+                            android:minHeight="0dp"
+                            android:minWidth="0dp"
+                            android:text="★ REVIEW"
+                            android:textColor="@color/accent_highlight"
+                            android:textSize="11sp" />
+
+                        <Button
+                            android:id="@+id/btnClearAnswer"
+                            android:layout_width="0dp"
+                            android:layout_height="38dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_unselected"
+                            android:fontFamily="sans-serif-bold"
+                            android:minHeight="0dp"
+                            android:minWidth="0dp"
+                            android:text="CLEAR"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Legend of status colors -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="12dp"
+                        android:fontFamily="sans-serif"
+                        android:text="🟢 Answered"
+                        android:textColor="@color/accent_running"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="12dp"
+                        android:fontFamily="sans-serif"
+                        android:text="🟣 Review"
+                        android:textColor="@color/accent_highlight"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif"
+                        android:text="⚪ Not Visited"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- Bottom Navigation Bar for Next/Prev Questions -->
+    <LinearLayout
+        android:id="@+id/layoutBottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:paddingTop="8dp">
+
+        <Button
+            android:id="@+id/btnPrevQuestion"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_unselected"
+            android:fontFamily="sans-serif-bold"
+            android:text="◀ PREVIOUS"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnNextQuestion"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_selected"
+            android:fontFamily="sans-serif-bold"
+            android:text="SAVE &amp; NEXT ▶"
+            android:textColor="@color/accent_highlight"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- End-Test Performance Summary Overlay (Visible upon submit) -->
+    <ScrollView
+        android:id="@+id/layoutMockSummary"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/mockTopBar"
+        android:layout_marginTop="12dp"
+        android:background="@color/amoled_black"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.14"
+                android:text="MOCK TEST COMPLETED"
+                android:textColor="@color/accent_running"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="sans-serif"
+                android:text="Full 3-Hour Exam Performance Analysis"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <!-- Scorecard Banner -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_pill_accent"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tvMockTotalScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:text="SCORE: +212 / 300"
+                    android:textColor="@color/accent_running"
+                    android:textSize="24sp" />
+
+                <TextView
+                    android:id="@+id/tvMockAccuracyPace"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Accuracy: 88.2% • Solved: 56 / 75 Qs • Time Used: 02h 45m"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Subject-wise Breakdown Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_card_border"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:letterSpacing="0.1"
+                    android:text="SECTION PERFORMANCE"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvSummaryPhysics"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="• Physics: 20/25 Answered • Projected: +76 • Avg: 132s/Q"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvSummaryChemistry"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="• Chemistry: 22/25 Answered • Projected: +82 • Avg: 98s/Q"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvSummaryMath"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="• Mathematics: 14/25 Answered • Projected: +54 • Avg: 168s/Q"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Close Action Button -->
+            <Button
+                android:id="@+id/btnCloseMockSummary"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/bg_pill_accent"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.08"
+                android:text="RETURN TO TIMER"
+                android:textColor="@color/accent_running"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </ScrollView>
+
+</RelativeLayout>

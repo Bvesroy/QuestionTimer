@@ -23,8 +23,10 @@
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/AdaptiveTargetSuggestion.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/DataIntegrityReport.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/Subject.java
+/Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/AttemptAuditRecord.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/PeriodReport.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/TimeRangeKpiSummary.java
+/Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/WallpaperPreferences.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/ExamProfile.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/DateSessionGroup.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/TargetCompliance.java
@@ -37,6 +39,7 @@
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/HeatmapDayData.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/SessionResumeData.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/SpeedDataPoint.java
+/Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/WidgetSettings.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/TargetSettings.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/TimeRangeFilter.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/model/Session.java

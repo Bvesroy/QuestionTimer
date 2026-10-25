@@ -1,0 +1,22 @@
+# Keystores and private signing credentials
+*.keystore
+*.jks
+*.key
+*.pem
+*.pk8
+
+# Build outputs and intermediate binaries
+/build/
+/build-tests/
+*.class
+*.dex
+*.apk
+*.idsig
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.gradle/
+/tmp/

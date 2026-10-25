@@ -27,6 +27,8 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.content.Intent;
+import android.net.Uri;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -38,10 +40,15 @@ import android.widget.Toast;
 
 import com.example.timerapp.R;
 import com.example.timerapp.data.SessionStorage;
+import com.example.timerapp.data.backup.SafBackupEngine;
 import com.example.timerapp.model.QuestionLog;
 import com.example.timerapp.model.TimerSession;
 import com.example.timerapp.model.TimerState;
 
+import org.json.JSONObject;
+
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -89,6 +96,11 @@ public class MainActivity extends Activity {
     private long accumulatedBreakDurationMs = 0L;
     private long lastDiscardedQuestionElapsedMs = 0L;
     private boolean canUndoReset = false;
+
+    // SAF Request Codes
+    private static final int REQUEST_CODE_SAF_FOLDER = 2001;
+    private static final int REQUEST_CODE_SAF_CREATE = 2002;
+    private static final int REQUEST_CODE_SAF_OPEN = 2003;
 
     // Smart Focus, Inactivity & Feedback
     private Vibrator vibrator;
@@ -360,6 +372,9 @@ public class MainActivity extends Activity {
         currentState = TimerState.RUNNING;
         lastInteractionRealtime = SystemClock.elapsedRealtime();
         continuousRunningStartTime = SystemClock.elapsedRealtime();
+        if (sessionStudyStartRealtime == 0L && !isBreakActive) {
+            sessionStudyStartRealtime = SystemClock.elapsedRealtime();
+        }
         hasShownIdleToast = false;
         hasShownBreakToast = false;
         startTimeRealtime = SystemClock.elapsedRealtime();
@@ -379,25 +394,210 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void handleStudyClockClick() {
+        triggerTapFeedback();
+        if (isBreakActive) {
+            long breakMs = (breakStartRealtime > 0) ? (SystemClock.elapsedRealtime() - breakStartRealtime) : 0L;
+            new AlertDialog.Builder(this, R.style.Theme_FullScreenTimer_Dialog)
+                    .setTitle("Break in Progress")
+                    .setMessage(String.format(Locale.ROOT, "Current Break: %s\nTotal Study Time: %s",
+                            formatTimeDisplay(breakMs),
+                            formatTimeDisplay(accumulatedStudyDurationMs)))
+                    .setPositiveButton("End Break & Resume Study", (dialog, which) -> endBreak())
+                    .setNegativeButton("Keep Resting", null)
+                    .show();
+        } else {
+            long currentStudyMs = accumulatedStudyDurationMs;
+            if (sessionStudyStartRealtime > 0) {
+                currentStudyMs += (SystemClock.elapsedRealtime() - sessionStudyStartRealtime);
+            }
+            final long studyMs = currentStudyMs;
+            CharSequence[] options = new CharSequence[]{
+                    "☕ Take a Break",
+                    "🏷️ Tag Question / Notes",
+                    "📝 JEE Mock Test (180 min)",
+                    "🏁 Complete & End Session"
+            };
+            new AlertDialog.Builder(this, R.style.Theme_FullScreenTimer_Dialog)
+                    .setTitle(String.format(Locale.ROOT, "Total Study Time: %s", formatTimeDisplay(studyMs)))
+                    .setItems(options, (dialog, which) -> {
+                        if (which == 0) {
+                            startBreak();
+                        } else if (which == 1) {
+                            openQuestionTaggingForCurrent();
+                        } else if (which == 2) {
+                            new MockTestDialog(MainActivity.this).show();
+                        } else if (which == 3) {
+                            endStudySession();
+                        }
+                    })
+                    .setNegativeButton("Close", null)
+                    .show();
+        }
+    }
+
+    private void startBreak() {
+        if (isBreakActive) return;
+        if (currentState == TimerState.RUNNING) {
+            pauseAndRecordQuestion();
+        }
+        if (sessionStudyStartRealtime > 0) {
+            accumulatedStudyDurationMs += (SystemClock.elapsedRealtime() - sessionStudyStartRealtime);
+            sessionStudyStartRealtime = 0L;
+        }
+        isBreakActive = true;
+        breakStartRealtime = SystemClock.elapsedRealtime();
+        if (currentSession != null) {
+            currentSession.setCurrentBreakStartTime(System.currentTimeMillis());
+            currentSession.setTotalStudyDurationMs(accumulatedStudyDurationMs);
+            persistSessions();
+        }
+        renderUi();
+        Toast.makeText(this, "☕ Break started. Total study clock paused.", Toast.LENGTH_SHORT).show();
+    }
+
+    private void endBreak() {
+        if (!isBreakActive) return;
+        long duration = (breakStartRealtime > 0) ? (SystemClock.elapsedRealtime() - breakStartRealtime) : 0L;
+        accumulatedBreakDurationMs += duration;
+        if (currentSession != null) {
+            long breakEnd = System.currentTimeMillis();
+            long breakStart = breakEnd - duration;
+            currentSession.addBreak(new com.example.timerapp.data.model.BreakLog(currentSession.getId(), breakStart, breakEnd));
+            currentSession.setCurrentBreakStartTime(0L);
+            currentSession.setTotalBreakDurationMs(accumulatedBreakDurationMs);
+            persistSessions();
+        }
+        isBreakActive = false;
+        breakStartRealtime = 0L;
+        sessionStudyStartRealtime = SystemClock.elapsedRealtime();
+        renderUi();
+        Toast.makeText(this, "Resumed study session! Total study clock running.", Toast.LENGTH_SHORT).show();
+    }
+
+    private void endStudySession() {
+        if (isBreakActive) {
+            endBreak();
+        }
+        if (sessionStudyStartRealtime > 0) {
+            accumulatedStudyDurationMs += (SystemClock.elapsedRealtime() - sessionStudyStartRealtime);
+            sessionStudyStartRealtime = 0L;
+        }
+        if (currentSession != null) {
+            currentSession.setTotalStudyDurationMs(accumulatedStudyDurationMs);
+            currentSession.setTotalBreakDurationMs(accumulatedBreakDurationMs);
+            currentSession.setStatus("COMPLETED");
+            persistSessions();
+            promptSessionNotesIfNeeded(currentSession);
+        }
+        renderUi();
+    }
+
+    private void openQuestionTaggingForCurrent() {
+        if (currentSession == null || currentSession.getLogs().isEmpty()) {
+            Toast.makeText(this, "No completed questions yet in this session to tag.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<QuestionLog> logs = currentSession.getLogs();
+        int logIndex = logs.size() - 1;
+        QuestionLog lastLog = logs.get(logIndex);
+        QuestionTaggingDialog dialog = new QuestionTaggingDialog(this, lastLog, updatedLog -> {
+            currentSession.replaceLog(logIndex, updatedLog);
+            persistSessions();
+            Toast.makeText(this, "Tags saved for Question #" + updatedLog.getQuestionNumber(), Toast.LENGTH_SHORT).show();
+        });
+        dialog.show();
+    }
+
     private void handleDiscardCurrentQuestion() {
         triggerTapFeedback();
-        if (currentState == TimerState.IDLE && accumulatedElapsedMs == 0L) {
-            Toast.makeText(this, "Timer is already reset", Toast.LENGTH_SHORT).show();
+        long currentElapsed = (currentState == TimerState.RUNNING)
+                ? (SystemClock.elapsedRealtime() - startTimeRealtime)
+                : accumulatedElapsedMs;
+        if (currentState == TimerState.IDLE && currentElapsed == 0L) {
+            Toast.makeText(this, "Timer is already at 00:00:00", Toast.LENGTH_SHORT).show();
             return;
         }
 
         new AlertDialog.Builder(this, R.style.Theme_FullScreenTimer_Dialog)
-                .setTitle(R.string.action_discard_confirm)
-                .setMessage("This will reset current timer back to 0 without saving.")
-                .setPositiveButton(R.string.action_confirm, (dialog, which) -> {
+                .setTitle("Reset Current Question?")
+                .setMessage("Resets Question #" + (currentSession != null ? currentSession.getCurrentQuestion() : 1) +
+                        " timer to 00:00:00. Previous questions, study clock, and session records will NOT be affected.")
+                .setPositiveButton("Reset Question", (dialog, which) -> {
                     timerHandler.removeCallbacks(timerTicker);
+                    lastDiscardedQuestionElapsedMs = currentElapsed;
+                    canUndoReset = true;
                     accumulatedElapsedMs = 0L;
                     continuousRunningStartTime = 0L;
                     currentState = TimerState.IDLE;
                     renderUi();
+                    showUndoResetDialog(lastDiscardedQuestionElapsedMs);
                 })
-                .setNegativeButton(R.string.action_cancel, null)
+                .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void showUndoResetDialog(long discardedMs) {
+        new AlertDialog.Builder(this, R.style.Theme_FullScreenTimer_Dialog)
+                .setTitle("Question Reset")
+                .setMessage(String.format(Locale.ROOT, "Reset Question #%d (%s was discarded). Undo?",
+                        currentSession != null ? currentSession.getCurrentQuestion() : 1,
+                        formatTimeDisplay(discardedMs)))
+                .setPositiveButton("Undo", (dialog, which) -> {
+                    if (canUndoReset) {
+                        accumulatedElapsedMs = lastDiscardedQuestionElapsedMs;
+                        lastDiscardedQuestionElapsedMs = 0L;
+                        canUndoReset = false;
+                        currentState = TimerState.PAUSED;
+                        renderUi();
+                        Toast.makeText(this, "Question timer restored!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Dismiss", (dialog, which) -> canUndoReset = false)
+                .show();
+    }
+
+    private void updateStudyClockDisplay() {
+        if (tvTotalStudyClock == null || currentSession == null) return;
+
+        long studyMs = accumulatedStudyDurationMs;
+        if (sessionStudyStartRealtime > 0 && !isBreakActive) {
+            studyMs += (SystemClock.elapsedRealtime() - sessionStudyStartRealtime);
+        }
+
+        long breakMs = accumulatedBreakDurationMs;
+        if (isBreakActive && breakStartRealtime > 0) {
+            breakMs += (SystemClock.elapsedRealtime() - breakStartRealtime);
+        }
+
+        long studySec = studyMs / 1000;
+        long studyH = studySec / 3600;
+        long studyM = (studySec % 3600) / 60;
+        long studyS = studySec % 60;
+
+        long breakSec = breakMs / 1000;
+        long breakM = breakSec / 60;
+        long breakS = breakSec % 60;
+
+        if (isBreakActive) {
+            tvTotalStudyClock.setText(String.format(Locale.ROOT, "☕ ON BREAK: %02d:%02d • STUDY: %02d:%02d:%02d", breakM, breakS, studyH, studyM, studyS));
+            tvTotalStudyClock.setTextColor(Color.parseColor("#FF9F0A"));
+        } else {
+            tvTotalStudyClock.setText(String.format(Locale.ROOT, "STUDY: %02d:%02d:%02d • BREAK: %02d:%02d", studyH, studyM, studyS, breakM, breakS));
+            tvTotalStudyClock.setTextColor(ThemeManager.getTextSecondaryColor(this));
+        }
+    }
+
+    private String formatTimeDisplay(long elapsedMs) {
+        long totalSeconds = Math.max(0, elapsedMs) / 1000;
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        if (hours > 0) {
+            return String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds);
+        } else {
+            return String.format(Locale.ROOT, "%02d:%02d", minutes, seconds);
+        }
     }
 
     /**
@@ -420,6 +620,7 @@ public class MainActivity extends Activity {
         } else {
             tvTimerReadout.setText(String.format(Locale.ROOT, "%02d:%02d.%d", minutes, seconds, tenths));
         }
+        updateStudyClockDisplay();
     }
 
     /**
@@ -582,8 +783,141 @@ public class MainActivity extends Activity {
                 updateExamBanner();
                 renderUi();
             }
+
+            @Override
+            public void onChooseBackupFolderRequested() {
+                chooseSafBackupFolder();
+            }
+
+            @Override
+            public void onBackupNowRequested() {
+                createSafBackup();
+            }
+
+            @Override
+            public void onRestoreBackupRequested() {
+                restoreSafBackup();
+            }
         });
         dialog.show();
+    }
+
+    private void chooseSafBackupFolder() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            try {
+                startActivityForResult(intent, REQUEST_CODE_SAF_FOLDER);
+            } catch (Exception e) {
+                Toast.makeText(this, "Folder picker not available: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(this, "SAF requires Android 5.0+", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void createSafBackup() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, "QuestionTimer_Backup_" + System.currentTimeMillis() + ".json");
+        try {
+            startActivityForResult(intent, REQUEST_CODE_SAF_CREATE);
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not open SAF document creator: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void restoreSafBackup() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        try {
+            startActivityForResult(intent, REQUEST_CODE_SAF_OPEN);
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not open file picker: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != Activity.RESULT_OK || data == null) return;
+
+        Uri uri = data.getData();
+        if (uri == null) return;
+
+        if (requestCode == REQUEST_CODE_SAF_FOLDER) {
+            final int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                }
+            } catch (Exception ignored) {}
+            SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit()
+                    .putString(SettingsDialog.KEY_SAF_BACKUP_URI, uri.toString())
+                    .putString(SettingsDialog.KEY_SAF_BACKUP_PATH, uri.getLastPathSegment() != null ? uri.getLastPathSegment() : uri.toString())
+                    .apply();
+            Toast.makeText(this, "SAF folder selected: " + uri.getLastPathSegment(), Toast.LENGTH_SHORT).show();
+        } else if (requestCode == REQUEST_CODE_SAF_CREATE) {
+            try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                if (os != null) {
+                    JSONObject prefsJson = new JSONObject();
+                    SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+                    prefsJson.put(SettingsDialog.KEY_TIMER_SIZE_MODE, currentTimerSizeMode);
+                    sessionStorage.exportSafBackup(os, prefsJson);
+                    Toast.makeText(this, "SAF Backup archive created successfully!", Toast.LENGTH_LONG).show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, "Backup creation failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == REQUEST_CODE_SAF_OPEN) {
+            try {
+                InputStream is = getContentResolver().openInputStream(uri);
+                SafBackupEngine.ValidationResult val = sessionStorage.validateSafBackup(is);
+                if (is != null) is.close();
+
+                if (!val.isValid) {
+                    Toast.makeText(this, "Invalid backup: " + val.errorMessage, Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                new AlertDialog.Builder(this, R.style.Theme_FullScreenTimer_Dialog)
+                        .setTitle("Restore Backup (v" + val.schemaVersion + ")")
+                        .setMessage(String.format(Locale.ROOT, "Backup archive validated (SHA-256 Verified).\nFound %d records.\n\nChoose Restore Mode:", val.totalRecords))
+                        .setPositiveButton("Replace All (Wipe & Restore)", (dialog, which) -> {
+                            performSafRestore(uri, SafBackupEngine.RestoreMode.REPLACE);
+                        })
+                        .setNeutralButton("Merge with Existing", (dialog, which) -> {
+                            performSafRestore(uri, SafBackupEngine.RestoreMode.MERGE);
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            } catch (Exception e) {
+                Toast.makeText(this, "Restore check failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void performSafRestore(Uri uri, SafBackupEngine.RestoreMode mode) {
+        try (InputStream is = getContentResolver().openInputStream(uri)) {
+            if (is != null) {
+                SafBackupEngine.RestoreResult result = sessionStorage.restoreSafBackup(is, mode);
+                if (result.success) {
+                    loadOrCreateSession();
+                    renderUi();
+                    Toast.makeText(this, String.format(Locale.ROOT, "Restored %d items! (%d sessions, %d questions)",
+                            result.getTotalItemsRestored(), result.sessionsRestored, result.logsRestored), Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "Restore failed: " + result.message, Toast.LENGTH_LONG).show();
+                }
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Error during restore: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     // ==========================================
@@ -719,6 +1053,15 @@ public class MainActivity extends Activity {
                 persistSessions();
             }
         }
+
+        if (currentSession != null) {
+            accumulatedStudyDurationMs = currentSession.getTotalStudyDurationMs();
+            accumulatedBreakDurationMs = currentSession.getTotalBreakDurationMs();
+            if (currentSession.isOnBreak()) {
+                isBreakActive = true;
+                breakStartRealtime = SystemClock.elapsedRealtime();
+            }
+        }
     }
 
     private void createNewSession() {
@@ -729,6 +1072,13 @@ public class MainActivity extends Activity {
             currentState = TimerState.IDLE;
         }
         accumulatedElapsedMs = 0L;
+        accumulatedStudyDurationMs = 0L;
+        sessionStudyStartRealtime = 0L;
+        isBreakActive = false;
+        breakStartRealtime = 0L;
+        accumulatedBreakDurationMs = 0L;
+        lastDiscardedQuestionElapsedMs = 0L;
+        canUndoReset = false;
 
         TimerSession newSession = new TimerSession(
                 0L,
@@ -757,11 +1107,23 @@ public class MainActivity extends Activity {
         }
         accumulatedElapsedMs = 0L;
         currentSession = session;
+        accumulatedStudyDurationMs = session.getTotalStudyDurationMs();
+        accumulatedBreakDurationMs = session.getTotalBreakDurationMs();
+        isBreakActive = session.isOnBreak();
+        sessionStudyStartRealtime = (currentState == TimerState.RUNNING && !isBreakActive) ? SystemClock.elapsedRealtime() : 0L;
         persistSessions();
         renderUi();
     }
 
     private void persistSessions() {
+        if (currentSession != null) {
+            long currentStudyMs = accumulatedStudyDurationMs;
+            if (sessionStudyStartRealtime > 0 && !isBreakActive) {
+                currentStudyMs += (SystemClock.elapsedRealtime() - sessionStudyStartRealtime);
+            }
+            currentSession.setTotalStudyDurationMs(currentStudyMs);
+            currentSession.setTotalBreakDurationMs(accumulatedBreakDurationMs);
+        }
         sessionStorage.saveSessions(allSessions);
         if (currentSession != null) {
             sessionStorage.saveActiveSessionId(currentSession.getId());
@@ -790,6 +1152,13 @@ public class MainActivity extends Activity {
                 ? (SystemClock.elapsedRealtime() - startTimeRealtime)
                 : accumulatedElapsedMs);
         outState.putLong("ACTIVE_SESSION_ID", currentSession != null ? currentSession.getId() : -1);
+        outState.putLong("STUDY_ACCUMULATED_MS", accumulatedStudyDurationMs);
+        outState.putLong("STUDY_START_REALTIME", sessionStudyStartRealtime);
+        outState.putBoolean("IS_BREAK_ACTIVE", isBreakActive);
+        outState.putLong("BREAK_START_REALTIME", breakStartRealtime);
+        outState.putLong("BREAK_ACCUMULATED_MS", accumulatedBreakDurationMs);
+        outState.putLong("LAST_DISCARDED_MS", lastDiscardedQuestionElapsedMs);
+        outState.putBoolean("CAN_UNDO_RESET", canUndoReset);
     }
 
     @Override
@@ -800,6 +1169,14 @@ public class MainActivity extends Activity {
             currentState = TimerState.IDLE;
         }
         accumulatedElapsedMs = savedInstanceState.getLong("ACCUMULATED_MS", 0L);
+        accumulatedStudyDurationMs = savedInstanceState.getLong("STUDY_ACCUMULATED_MS", 0L);
+        sessionStudyStartRealtime = savedInstanceState.getLong("STUDY_START_REALTIME", 0L);
+        isBreakActive = savedInstanceState.getBoolean("IS_BREAK_ACTIVE", false);
+        breakStartRealtime = savedInstanceState.getLong("BREAK_START_REALTIME", 0L);
+        accumulatedBreakDurationMs = savedInstanceState.getLong("BREAK_ACCUMULATED_MS", 0L);
+        lastDiscardedQuestionElapsedMs = savedInstanceState.getLong("LAST_DISCARDED_MS", 0L);
+        canUndoReset = savedInstanceState.getBoolean("CAN_UNDO_RESET", false);
+
         if (currentState == TimerState.RUNNING) {
             startTimeRealtime = SystemClock.elapsedRealtime() - accumulatedElapsedMs;
             timerHandler.post(timerTicker);

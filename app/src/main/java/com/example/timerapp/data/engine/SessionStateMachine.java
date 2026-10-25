@@ -106,7 +106,7 @@ public class SessionStateMachine implements Serializable {
     }
 
     public synchronized long getTotalStudyTimeMs() {
-        return totalStudyTimeMs + (currentState == SessionState.RUNNING_QUESTION ? currentQuestionElapsedMs : 0L);
+        return totalStudyTimeMs + currentQuestionElapsedMs;
     }
 
     public synchronized long getTotalBreakTimeMs() {
@@ -238,6 +238,7 @@ public class SessionStateMachine implements Serializable {
 
         recordedQuestions.add(log);
         totalStudyTimeMs += currentQuestionElapsedMs;
+        currentQuestionElapsedMs = 0L;
 
         this.lastRecordedOutcome = outcome;
         this.lastRecordedMarks = marks;

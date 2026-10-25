@@ -44,6 +44,9 @@ public class SettingsDialog extends Dialog {
         void onTargetsChanged(int targetSecPerQ, int targetSessionMin, int targetQuestions);
         void onThemeChanged(String theme, String accent);
         default void onFocusControlsChanged() {}
+        default void onTwoZoneRecordingChanged(boolean enabled) {}
+        default void onOpenWallpaperPreview() {}
+        default void onOpenMistakeReview() {}
         default void onChooseBackupFolderRequested() {}
         default void onBackupNowRequested() {}
         default void onRestoreBackupRequested() {}
@@ -65,6 +68,9 @@ public class SettingsDialog extends Dialog {
     public static final String KEY_AUTO_PIP = "auto_pip_enabled";
     public static final String KEY_IDLE_MINUTES = "idle_inactivity_minutes";
     public static final String KEY_BREAK_MINUTES = "break_reminder_minutes";
+
+    public static final String KEY_TWO_ZONE_RECORDING = "two_zone_recording_enabled";
+    public static final String KEY_WALLPAPER_AUTO_APPLY = "wallpaper_auto_apply";
 
     public static final String KEY_PIN_ENABLED = "privacy_pin_enabled";
     public static final String KEY_PIN_CODE = "privacy_pin_code";
@@ -112,6 +118,8 @@ public class SettingsDialog extends Dialog {
 
     // Sound & Focus views
     private CheckBox cbHapticFeedback, cbAudioChime, cbAutoPip;
+    private CheckBox cbTwoZoneAnswer, cbAutoApplyWallpaper;
+    private Button btnPreviewWallpaper, btnOpenMistakeReview;
     private Spinner spinnerIdleDetection, spinnerBreakReminder;
 
     // Backup & Privacy views
@@ -348,6 +356,30 @@ public class SettingsDialog extends Dialog {
         spinnerBreakReminder.setAdapter(breakAdapter);
         int savedBreak = prefs.getInt(KEY_BREAK_MINUTES, 45);
         spinnerBreakReminder.setSelection(savedBreak == 25 ? 1 : (savedBreak == 45 ? 2 : (savedBreak == 60 ? 3 : 0)));
+
+        cbTwoZoneAnswer = view.findViewById(R.id.cbTwoZoneAnswer);
+        cbAutoApplyWallpaper = view.findViewById(R.id.cbAutoApplyWallpaper);
+        btnPreviewWallpaper = view.findViewById(R.id.btnPreviewWallpaper);
+        btnOpenMistakeReview = view.findViewById(R.id.btnOpenMistakeReview);
+
+        if (cbTwoZoneAnswer != null) {
+            cbTwoZoneAnswer.setChecked(prefs.getBoolean(KEY_TWO_ZONE_RECORDING, false));
+        }
+        if (cbAutoApplyWallpaper != null) {
+            cbAutoApplyWallpaper.setChecked(prefs.getBoolean(KEY_WALLPAPER_AUTO_APPLY, false));
+        }
+        if (btnPreviewWallpaper != null) {
+            btnPreviewWallpaper.setOnClickListener(v -> {
+                dismiss();
+                if (listener != null) listener.onOpenWallpaperPreview();
+            });
+        }
+        if (btnOpenMistakeReview != null) {
+            btnOpenMistakeReview.setOnClickListener(v -> {
+                dismiss();
+                if (listener != null) listener.onOpenMistakeReview();
+            });
+        }
 
         // Backup & Privacy (SAF Destination)
         tvBackupFolderPath = view.findViewById(R.id.tvBackupFolderPath);
@@ -589,6 +621,9 @@ public class SettingsDialog extends Dialog {
             daysLeft = Integer.parseInt(etExamDaysLeft.getText().toString().trim());
         } catch (NumberFormatException ignored) {}
 
+        boolean twoZone = (cbTwoZoneAnswer != null && cbTwoZoneAnswer.isChecked());
+        boolean autoWallpaper = (cbAutoApplyWallpaper != null && cbAutoApplyWallpaper.isChecked());
+
         prefs.edit()
                 .putString(KEY_TIMER_SIZE_MODE, currentSizeMode)
                 .putInt(KEY_TARGET_SEC_PER_Q, currentTargetSecPerQ)
@@ -603,6 +638,8 @@ public class SettingsDialog extends Dialog {
                 .putBoolean(KEY_AUTO_PIP, cbAutoPip.isChecked())
                 .putInt(KEY_IDLE_MINUTES, idleMins)
                 .putInt(KEY_BREAK_MINUTES, breakMins)
+                .putBoolean(KEY_TWO_ZONE_RECORDING, twoZone)
+                .putBoolean(KEY_WALLPAPER_AUTO_APPLY, autoWallpaper)
                 .putBoolean(KEY_PIN_ENABLED, cbEnablePinLock.isChecked())
                 .putString(KEY_PIN_CODE, etPrivacyPin.getText().toString().trim())
                 .apply();
@@ -611,6 +648,7 @@ public class SettingsDialog extends Dialog {
             listener.onTargetsChanged(currentTargetSecPerQ, currentTargetSessionMin, currentTargetQuestions);
             listener.onThemeChanged(currentTheme, currentAccent);
             listener.onFocusControlsChanged();
+            listener.onTwoZoneRecordingChanged(twoZone);
         }
         dismiss();
     }

@@ -12,6 +12,7 @@ import com.example.timerapp.data.backup.BackupManager;
 import com.example.timerapp.data.backup.SafBackupEngine;
 import com.example.timerapp.data.model.Achievement;
 import com.example.timerapp.data.model.AdaptiveTargetSuggestion;
+import com.example.timerapp.data.model.AttemptAuditRecord;
 import com.example.timerapp.data.model.BreakLog;
 import com.example.timerapp.data.model.DailyPracticeDataPoint;
 import com.example.timerapp.data.model.DataIntegrityReport;
@@ -38,6 +39,8 @@ import com.example.timerapp.data.model.TargetSettings;
 import com.example.timerapp.data.model.TimeRangeFilter;
 import com.example.timerapp.data.model.TimeRangeKpiSummary;
 import com.example.timerapp.data.model.TimeSlotStats;
+import com.example.timerapp.data.model.WallpaperPreferences;
+import com.example.timerapp.data.model.WidgetSettings;
 import com.example.timerapp.model.TimerSession;
 
 import org.json.JSONArray;
@@ -1629,12 +1632,17 @@ public class TimerDatabaseManager {
             int timePerQuestion = prefs.getInt(KEY_TARGET_TIME_PER_QUESTION_SEC, TargetSettings.DEFAULT_TIME_PER_QUESTION_SEC);
             int sessionDuration = prefs.getInt(KEY_TARGET_SESSION_DURATION_MIN, TargetSettings.DEFAULT_SESSION_DURATION_MIN);
             int sessionQuestions = prefs.getInt(KEY_TARGET_SESSION_QUESTIONS, TargetSettings.DEFAULT_SESSION_QUESTIONS);
-            return new TargetSettings(timePerQuestion, sessionDuration, sessionQuestions);
+            return new TargetSettings(timePerQuestion, sessionDuration, sessionQuestions,
+                    getTargetDate(), isTwoZoneEnabled(), getWallpaperPreferences(), getWidgetSettings());
         }
         return new TargetSettings(
                 inMemoryTargetSettings.getTargetTimePerQuestionSec(),
                 inMemoryTargetSettings.getTargetSessionDurationMin(),
-                inMemoryTargetSettings.getTargetSessionQuestions()
+                inMemoryTargetSettings.getTargetSessionQuestions(),
+                getTargetDate(),
+                isTwoZoneEnabled(),
+                getWallpaperPreferences(),
+                getWidgetSettings()
         );
     }
 
@@ -1643,8 +1651,17 @@ public class TimerDatabaseManager {
         this.inMemoryTargetSettings = new TargetSettings(
                 settings.getTargetTimePerQuestionSec(),
                 settings.getTargetSessionDurationMin(),
-                settings.getTargetSessionQuestions()
+                settings.getTargetSessionQuestions(),
+                settings.getTargetDate(),
+                settings.isTwoZoneEnabled(),
+                settings.getWallpaperPreferences(),
+                settings.getWidgetSettings()
         );
+
+        setTargetDate(settings.getTargetDate());
+        setTwoZoneEnabled(settings.isTwoZoneEnabled());
+        saveWallpaperPreferences(settings.getWallpaperPreferences());
+        saveWidgetSettings(settings.getWidgetSettings());
 
         if (context != null) {
             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -1652,6 +1669,8 @@ public class TimerDatabaseManager {
                     .putInt(KEY_TARGET_TIME_PER_QUESTION_SEC, settings.getTargetTimePerQuestionSec())
                     .putInt(KEY_TARGET_SESSION_DURATION_MIN, settings.getTargetSessionDurationMin())
                     .putInt(KEY_TARGET_SESSION_QUESTIONS, settings.getTargetSessionQuestions())
+                    .putString("target_date", settings.getTargetDate())
+                    .putBoolean("two_zone_enabled", settings.isTwoZoneEnabled())
                     .apply();
         }
     }
@@ -1684,6 +1703,297 @@ public class TimerDatabaseManager {
         TargetSettings current = getTargetSettings();
         current.setTargetSessionQuestions(count);
         saveTargetSettings(current);
+    }
+
+    // =========================================================================
+    // Version 4 Settings & Preferences Storage
+    // =========================================================================
+
+    public synchronized String getSetting(String key, String defaultValue) {
+        if (key == null) return defaultValue;
+        try {
+            SQLiteDatabase db = dbHelper.getReadableDatabase();
+            String query = "SELECT " + DatabaseContract.SettingEntry.COLUMN_VALUE +
+                    " FROM " + DatabaseContract.SettingEntry.TABLE_NAME +
+                    " WHERE " + DatabaseContract.SettingEntry.COLUMN_KEY + " = ? LIMIT 1";
+            try (Cursor c = db.rawQuery(query, new String[]{key})) {
+                if (c != null && c.moveToFirst()) {
+                    return c.getString(0);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error querying setting key: " + key, e);
+        }
+        return defaultValue;
+    }
+
+    public synchronized boolean saveSetting(String key, String value) {
+        if (key == null || value == null) return false;
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            ContentValues cv = new ContentValues();
+            cv.put(DatabaseContract.SettingEntry.COLUMN_KEY, key);
+            cv.put(DatabaseContract.SettingEntry.COLUMN_VALUE, value);
+            db.insertWithOnConflict(DatabaseContract.SettingEntry.TABLE_NAME, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving setting key: " + key, e);
+            return false;
+        }
+    }
+
+    public synchronized Map<String, String> getAllSettings() {
+        Map<String, String> map = new HashMap<>();
+        try {
+            SQLiteDatabase db = dbHelper.getReadableDatabase();
+            String query = "SELECT " + DatabaseContract.SettingEntry.COLUMN_KEY + ", " +
+                    DatabaseContract.SettingEntry.COLUMN_VALUE +
+                    " FROM " + DatabaseContract.SettingEntry.TABLE_NAME;
+            try (Cursor c = db.rawQuery(query, null)) {
+                while (c != null && c.moveToNext()) {
+                    map.put(c.getString(0), c.getString(1));
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error querying all settings", e);
+        }
+        return map;
+    }
+
+    public synchronized String getTargetDate() {
+        String dbVal = getSetting("target_date", null);
+        if (dbVal != null && !dbVal.trim().isEmpty()) {
+            return dbVal.trim();
+        }
+        if (context != null) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            return prefs.getString("target_date", TargetSettings.DEFAULT_TARGET_DATE);
+        }
+        return inMemoryTargetSettings.getTargetDate();
+    }
+
+    public synchronized void setTargetDate(String date) {
+        String val = (date != null && !date.trim().isEmpty()) ? date.trim() : TargetSettings.DEFAULT_TARGET_DATE;
+        saveSetting("target_date", val);
+        if (context != null) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putString("target_date", val).apply();
+        }
+        inMemoryTargetSettings.setTargetDate(val);
+    }
+
+    public synchronized boolean isTwoZoneEnabled() {
+        String dbVal = getSetting("two_zone_enabled", null);
+        if (dbVal != null) {
+            return Boolean.parseBoolean(dbVal);
+        }
+        if (context != null) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            return prefs.getBoolean("two_zone_enabled", false);
+        }
+        return inMemoryTargetSettings.isTwoZoneEnabled();
+    }
+
+    public synchronized void setTwoZoneEnabled(boolean enabled) {
+        saveSetting("two_zone_enabled", String.valueOf(enabled));
+        if (context != null) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putBoolean("two_zone_enabled", enabled).apply();
+        }
+        inMemoryTargetSettings.setTwoZoneEnabled(enabled);
+    }
+
+    public synchronized WallpaperPreferences getWallpaperPreferences() {
+        String raw = getSetting("wallpaper_preferences", null);
+        if (raw != null && !raw.trim().isEmpty()) {
+            return WallpaperPreferences.fromJsonString(raw);
+        }
+        if (context != null) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            String prefRaw = prefs.getString("wallpaper_preferences", null);
+            if (prefRaw != null && !prefRaw.trim().isEmpty()) {
+                return WallpaperPreferences.fromJsonString(prefRaw);
+            }
+        }
+        return inMemoryTargetSettings.getWallpaperPreferences();
+    }
+
+    public synchronized void saveWallpaperPreferences(WallpaperPreferences wallpaperPrefs) {
+        if (wallpaperPrefs == null) wallpaperPrefs = new WallpaperPreferences();
+        String jsonStr = wallpaperPrefs.toJson().toString();
+        saveSetting("wallpaper_preferences", jsonStr);
+        saveSetting("wallpaper_enabled", String.valueOf(wallpaperPrefs.isEnabled()));
+        saveSetting("wallpaper_uri", wallpaperPrefs.getUri());
+        saveSetting("wallpaper_dim_alpha", String.valueOf(wallpaperPrefs.getDimAlpha()));
+        saveSetting("wallpaper_blur_radius", String.valueOf(wallpaperPrefs.getBlurRadius()));
+        saveSetting("wallpaper_style", wallpaperPrefs.getStyle());
+
+        if (context != null) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putString("wallpaper_preferences", jsonStr).apply();
+        }
+        inMemoryTargetSettings.setWallpaperPreferences(wallpaperPrefs);
+    }
+
+    public synchronized WidgetSettings getWidgetSettings() {
+        String raw = getSetting("widget_settings", null);
+        if (raw != null && !raw.trim().isEmpty()) {
+            return WidgetSettings.fromJsonString(raw);
+        }
+        if (context != null) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            String prefRaw = prefs.getString("widget_settings", null);
+            if (prefRaw != null && !prefRaw.trim().isEmpty()) {
+                return WidgetSettings.fromJsonString(prefRaw);
+            }
+        }
+        return inMemoryTargetSettings.getWidgetSettings();
+    }
+
+    public synchronized void saveWidgetSettings(WidgetSettings widgetSettings) {
+        if (widgetSettings == null) widgetSettings = new WidgetSettings();
+        String jsonStr = widgetSettings.toJson().toString();
+        saveSetting("widget_settings", jsonStr);
+        saveSetting("widget_theme", widgetSettings.getTheme());
+        saveSetting("widget_show_countdown", String.valueOf(widgetSettings.isShowCountdown()));
+        saveSetting("widget_show_daily_goal", String.valueOf(widgetSettings.isShowDailyGoal()));
+        saveSetting("widget_opacity", String.valueOf(widgetSettings.getOpacity()));
+        saveSetting("widget_refresh_interval_minutes", String.valueOf(widgetSettings.getRefreshIntervalMinutes()));
+
+        if (context != null) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putString("widget_settings", jsonStr).apply();
+        }
+        inMemoryTargetSettings.setWidgetSettings(widgetSettings);
+    }
+
+    // =========================================================================
+    // Version 4 Attempt Audit History Operations
+    // =========================================================================
+
+    public synchronized boolean logAttemptCorrection(long questionLogId, String newOutcome, String notes) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        String currentOutcome = "SOLVED";
+        long sessionId = 0;
+        String query = "SELECT " + DatabaseContract.QuestionLogEntry.COLUMN_SESSION_ID + ", " +
+                DatabaseContract.QuestionLogEntry.COLUMN_OUTCOME +
+                " FROM " + DatabaseContract.QuestionLogEntry.TABLE_NAME +
+                " WHERE " + DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID + " = ? LIMIT 1";
+        try (Cursor c = db.rawQuery(query, new String[]{String.valueOf(questionLogId)})) {
+            if (c != null && c.moveToFirst()) {
+                sessionId = c.getLong(0);
+                currentOutcome = c.getString(1);
+            } else {
+                Log.w(TAG, "Question log not found for correction id=" + questionLogId);
+                return false;
+            }
+        }
+
+        return logAttemptCorrection(questionLogId, sessionId, currentOutcome, newOutcome, System.currentTimeMillis(), notes);
+    }
+
+    public synchronized boolean logAttemptCorrection(long questionLogId, long sessionId,
+                                                     String originalOutcome, String correctedOutcome,
+                                                     long timestamp, String notes) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            // 1. Update question_logs record
+            ContentValues qCv = new ContentValues();
+            qCv.put(DatabaseContract.QuestionLogEntry.COLUMN_OUTCOME, correctedOutcome);
+            qCv.put(DatabaseContract.QuestionLogEntry.COLUMN_ORIGINAL_OUTCOME, originalOutcome);
+            qCv.put(DatabaseContract.QuestionLogEntry.COLUMN_CORRECTION_TIMESTAMP, timestamp);
+            db.update(
+                    DatabaseContract.QuestionLogEntry.TABLE_NAME,
+                    qCv,
+                    DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID + " = ?",
+                    new String[]{String.valueOf(questionLogId)}
+            );
+
+            // 2. Insert immutable audit history log
+            ContentValues aCv = new ContentValues();
+            aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_QUESTION_LOG_ID, questionLogId);
+            aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_SESSION_ID, sessionId);
+            aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_ORIGINAL_OUTCOME, originalOutcome != null ? originalOutcome : "");
+            aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTED_OUTCOME, correctedOutcome != null ? correctedOutcome : "");
+            aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTION_TIMESTAMP, timestamp);
+            aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_NOTES, notes != null ? notes : "");
+            db.insertOrThrow(DatabaseContract.AttemptAuditEntry.TABLE_NAME, null, aCv);
+
+            db.setTransactionSuccessful();
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error recording attempt audit correction", e);
+            return false;
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    public synchronized List<AttemptAuditRecord> getAuditHistoryForQuestion(long questionLogId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<AttemptAuditRecord> records = new ArrayList<>();
+        String query = "SELECT * FROM " + DatabaseContract.AttemptAuditEntry.TABLE_NAME +
+                " WHERE " + DatabaseContract.AttemptAuditEntry.COLUMN_QUESTION_LOG_ID + " = ?" +
+                " ORDER BY " + DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTION_TIMESTAMP + " DESC";
+        try (Cursor c = db.rawQuery(query, new String[]{String.valueOf(questionLogId)})) {
+            while (c != null && c.moveToNext()) {
+                records.add(parseAuditRecordCursor(c));
+            }
+        }
+        return records;
+    }
+
+    public synchronized List<AttemptAuditRecord> getAuditHistoryForSession(long sessionId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<AttemptAuditRecord> records = new ArrayList<>();
+        String query = "SELECT * FROM " + DatabaseContract.AttemptAuditEntry.TABLE_NAME +
+                " WHERE " + DatabaseContract.AttemptAuditEntry.COLUMN_SESSION_ID + " = ?" +
+                " ORDER BY " + DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTION_TIMESTAMP + " DESC";
+        try (Cursor c = db.rawQuery(query, new String[]{String.valueOf(sessionId)})) {
+            while (c != null && c.moveToNext()) {
+                records.add(parseAuditRecordCursor(c));
+            }
+        }
+        return records;
+    }
+
+    public synchronized List<AttemptAuditRecord> getAllAuditHistory() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<AttemptAuditRecord> records = new ArrayList<>();
+        String query = "SELECT * FROM " + DatabaseContract.AttemptAuditEntry.TABLE_NAME +
+                " ORDER BY " + DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTION_TIMESTAMP + " DESC";
+        try (Cursor c = db.rawQuery(query, null)) {
+            while (c != null && c.moveToNext()) {
+                records.add(parseAuditRecordCursor(c));
+            }
+        }
+        return records;
+    }
+
+    private AttemptAuditRecord parseAuditRecordCursor(Cursor c) {
+        int idIdx = c.getColumnIndex(DatabaseContract.AttemptAuditEntry.COLUMN_ALT_ID);
+        long id = idIdx != -1 ? c.getLong(idIdx) : c.getLong(0);
+
+        int qIdIdx = c.getColumnIndex(DatabaseContract.AttemptAuditEntry.COLUMN_QUESTION_LOG_ID);
+        long qLogId = qIdIdx != -1 ? c.getLong(qIdIdx) : 0;
+
+        int sIdIdx = c.getColumnIndex(DatabaseContract.AttemptAuditEntry.COLUMN_SESSION_ID);
+        long sId = sIdIdx != -1 ? c.getLong(sIdIdx) : 0;
+
+        int origIdx = c.getColumnIndex(DatabaseContract.AttemptAuditEntry.COLUMN_ORIGINAL_OUTCOME);
+        String origOut = origIdx != -1 ? c.getString(origIdx) : "";
+
+        int corrIdx = c.getColumnIndex(DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTED_OUTCOME);
+        String corrOut = corrIdx != -1 ? c.getString(corrIdx) : "";
+
+        int timeIdx = c.getColumnIndex(DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTION_TIMESTAMP);
+        long time = timeIdx != -1 ? c.getLong(timeIdx) : 0;
+
+        int notesIdx = c.getColumnIndex(DatabaseContract.AttemptAuditEntry.COLUMN_NOTES);
+        String notes = (notesIdx != -1 && !c.isNull(notesIdx)) ? c.getString(notesIdx) : "";
+
+        return new AttemptAuditRecord(id, qLogId, sId, origOut, corrOut, time, notes);
     }
 
     public TargetCompliance computeTargetCompliance(SessionStats session) {
@@ -2380,8 +2690,15 @@ public class TimerDatabaseManager {
         int notesIdx = cursor.getColumnIndex(DatabaseContract.QuestionLogEntry.COLUMN_NOTES);
         String notes = (notesIdx != -1 && !cursor.isNull(notesIdx)) ? cursor.getString(notesIdx) : "";
 
+        int origOutIdx = cursor.getColumnIndex(DatabaseContract.QuestionLogEntry.COLUMN_ORIGINAL_OUTCOME);
+        String originalOutcome = (origOutIdx != -1 && !cursor.isNull(origOutIdx)) ? cursor.getString(origOutIdx) : "";
+
+        int corrTimeIdx = cursor.getColumnIndex(DatabaseContract.QuestionLogEntry.COLUMN_CORRECTION_TIMESTAMP);
+        long correctionTimestamp = (corrTimeIdx != -1 && !cursor.isNull(corrTimeIdx)) ? cursor.getLong(corrTimeIdx) : 0L;
+
         return new QuestionLog(id, sessionId, questionNum, durationMs, completedAt,
-                label, topic, difficulty, outcome, confidence, mistakeTag, notes);
+                label, topic, difficulty, outcome, confidence, mistakeTag, notes,
+                originalOutcome, correctionTimestamp);
     }
 
     public synchronized List<QuestionLog> getAllQuestions() {
@@ -2667,7 +2984,20 @@ public class TimerDatabaseManager {
 
     public synchronized void exportSafBackup(OutputStream outputStream, JSONObject preferences) throws IOException, JSONException {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        SafBackupEngine.exportBackup(db, outputStream, preferences);
+        JSONObject prefs = (preferences != null) ? preferences : new JSONObject();
+        if (!prefs.has("target_date")) {
+            prefs.put("target_date", getTargetDate());
+        }
+        if (!prefs.has("two_zone_enabled")) {
+            prefs.put("two_zone_enabled", isTwoZoneEnabled());
+        }
+        if (!prefs.has("wallpaper_settings")) {
+            prefs.put("wallpaper_settings", getWallpaperPreferences().toJson());
+        }
+        if (!prefs.has("widget_settings")) {
+            prefs.put("widget_settings", getWidgetSettings().toJson());
+        }
+        SafBackupEngine.exportBackup(db, outputStream, prefs);
     }
 
     public synchronized SafBackupEngine.ValidationResult validateSafBackup(InputStream inputStream) {

@@ -19,11 +19,36 @@ if [ -z "${JAVA_HOME:-}" ] || [ ! -x "$JAVA_HOME/bin/javac" ]; then
 fi
 export PATH="$JAVA_HOME/bin:$PATH"
 
-JUNIT_JAR="/Users/jeemainsadv/.gradle/wrapper/dists/gradle-8.11.1-all/2qik7nd48slq1ooc2496ixf4i/gradle-8.11.1/lib/junit-4.13.2.jar"
-[ -f "$JUNIT_JAR" ] || JUNIT_JAR="/tmp/junit-4.13.2.jar"
+# Dynamic Gradle wrapper / JUnit JAR resolution
+GRADLE_DIR="${GRADLE_USER_HOME:-${HOME:-}/.gradle}"
+JUNIT_JAR="${JUNIT_JAR:-}"
+if [ -z "$JUNIT_JAR" ] || [ ! -f "$JUNIT_JAR" ]; then
+    if [ -n "$GRADLE_DIR" ] && [ -d "$GRADLE_DIR" ]; then
+        JUNIT_JAR="$(find "$GRADLE_DIR" -name "junit-4*.jar" 2>/dev/null | head -n 1 || true)"
+    fi
+fi
+if [ -z "$JUNIT_JAR" ] || [ ! -f "$JUNIT_JAR" ]; then
+    if [ -f "/tmp/junit-4.13.2.jar" ]; then
+        JUNIT_JAR="/tmp/junit-4.13.2.jar"
+    elif [ -f "/usr/share/java/junit4.jar" ]; then
+        JUNIT_JAR="/usr/share/java/junit4.jar"
+    fi
+fi
 
-HAMCREST_JAR="/Users/jeemainsadv/.gradle/wrapper/dists/gradle-8.11.1-all/2qik7nd48slq1ooc2496ixf4i/gradle-8.11.1/lib/hamcrest-core-1.3.jar"
-[ -f "$HAMCREST_JAR" ] || HAMCREST_JAR="/tmp/hamcrest-core-1.3.jar"
+# Dynamic Hamcrest JAR resolution
+HAMCREST_JAR="${HAMCREST_JAR:-}"
+if [ -z "$HAMCREST_JAR" ] || [ ! -f "$HAMCREST_JAR" ]; then
+    if [ -n "$GRADLE_DIR" ] && [ -d "$GRADLE_DIR" ]; then
+        HAMCREST_JAR="$(find "$GRADLE_DIR" -name "hamcrest-core*.jar" 2>/dev/null | head -n 1 || true)"
+    fi
+fi
+if [ -z "$HAMCREST_JAR" ] || [ ! -f "$HAMCREST_JAR" ]; then
+    if [ -f "/tmp/hamcrest-core-1.3.jar" ]; then
+        HAMCREST_JAR="/tmp/hamcrest-core-1.3.jar"
+    elif [ -f "/usr/share/java/hamcrest-core.jar" ]; then
+        HAMCREST_JAR="/usr/share/java/hamcrest-core.jar"
+    fi
+fi
 
 JSON_JAR="/tmp/json-20240303.jar"
 ANDROID_JAR="/opt/homebrew/share/android-commandlinetools/platforms/android-35/android.jar"
@@ -73,9 +98,15 @@ TEST_EXIT_CODE=0
   com.example.timerapp.data.AnalyticsAndDateGroupingTest \
   com.example.timerapp.data.BackupManagerTest \
   com.example.timerapp.data.TimerDatabaseManagerTest \
-  com.example.timerapp.data.SensitiveDataRedactionTest || TEST_EXIT_CODE=$?
+  com.example.timerapp.data.SensitiveDataRedactionTest \
+  com.example.timerapp.data.SessionStateMachineTest \
+  com.example.timerapp.data.TwoZoneHitDetectionAndUndoTest \
+  com.example.timerapp.data.EstimatedMarksCalculatorTest \
+  com.example.timerapp.data.TargetCountdownMathTest \
+  com.example.timerapp.data.SchemaV4AndSafSettingsTest \
+  com.example.timerapp.data.DatabaseV4MigrationAndAuditTest || TEST_EXIT_CODE=$?
 
-SWARM_DIR="${SWARM_DIR:-$(cd "$DIR/../Swarm" 2>/dev/null && pwd -P || echo "/Users/jeemainsadv/Swarm")}"
+SWARM_DIR="${SWARM_DIR:-${SWARM_ROOT:-$(cd "$DIR/../Swarm" 2>/dev/null && pwd -P || echo "${HOME:-}/Swarm")}}"
 ARCHIVE_DIR="$SWARM_DIR/metrics/tests"
 mkdir -p "$ARCHIVE_DIR/archive"
 

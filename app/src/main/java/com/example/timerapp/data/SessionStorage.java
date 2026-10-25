@@ -8,6 +8,7 @@ import android.util.Log;
 import com.example.timerapp.data.local.sqlite.TimerDatabaseManager;
 import com.example.timerapp.data.model.Achievement;
 import com.example.timerapp.data.model.AdaptiveTargetSuggestion;
+import com.example.timerapp.data.model.AttemptAuditRecord;
 import com.example.timerapp.data.model.DailyPracticeDataPoint;
 import com.example.timerapp.data.model.DataIntegrityReport;
 import com.example.timerapp.data.model.DateSessionGroup;
@@ -22,6 +23,8 @@ import com.example.timerapp.data.model.SessionStats;
 import com.example.timerapp.data.model.SpeedDataPoint;
 import com.example.timerapp.data.model.Subject;
 import com.example.timerapp.data.model.SubjectPracticeStats;
+import com.example.timerapp.data.model.WallpaperPreferences;
+import com.example.timerapp.data.model.WidgetSettings;
 import com.example.timerapp.data.backup.SafBackupEngine;
 import com.example.timerapp.data.model.BreakLog;
 import com.example.timerapp.data.model.ExamProfile;
@@ -44,6 +47,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Persistence layer bridging in-memory UI models to native SQLite storage
@@ -433,6 +437,80 @@ public class SessionStorage {
 
     public synchronized void setTargetSessionQuestions(int count) {
         dbManager.setTargetSessionQuestions(count);
+    }
+
+    // =========================================================================
+    // Version 4 Settings & Preferences Storage APIs
+    // =========================================================================
+
+    public synchronized String getTargetDate() {
+        return dbManager.getTargetDate();
+    }
+
+    public synchronized void setTargetDate(String date) {
+        dbManager.setTargetDate(date);
+    }
+
+    public synchronized boolean isTwoZoneEnabled() {
+        return dbManager.isTwoZoneEnabled();
+    }
+
+    public synchronized void setTwoZoneEnabled(boolean enabled) {
+        dbManager.setTwoZoneEnabled(enabled);
+    }
+
+    public synchronized WallpaperPreferences getWallpaperPreferences() {
+        return dbManager.getWallpaperPreferences();
+    }
+
+    public synchronized void saveWallpaperPreferences(WallpaperPreferences prefs) {
+        dbManager.saveWallpaperPreferences(prefs);
+    }
+
+    public synchronized WidgetSettings getWidgetSettings() {
+        return dbManager.getWidgetSettings();
+    }
+
+    public synchronized void saveWidgetSettings(WidgetSettings settings) {
+        dbManager.saveWidgetSettings(settings);
+    }
+
+    public synchronized String getSetting(String key, String defaultValue) {
+        return dbManager.getSetting(key, defaultValue);
+    }
+
+    public synchronized boolean saveSetting(String key, String value) {
+        return dbManager.saveSetting(key, value);
+    }
+
+    public synchronized Map<String, String> getAllSettings() {
+        return dbManager.getAllSettings();
+    }
+
+    // =========================================================================
+    // Version 4 Attempt Audit History APIs
+    // =========================================================================
+
+    public synchronized boolean logAttemptCorrection(long questionLogId, String newOutcome, String notes) {
+        return dbManager.logAttemptCorrection(questionLogId, newOutcome, notes);
+    }
+
+    public synchronized boolean logAttemptCorrection(long questionLogId, long sessionId,
+                                                     String originalOutcome, String correctedOutcome,
+                                                     long timestamp, String notes) {
+        return dbManager.logAttemptCorrection(questionLogId, sessionId, originalOutcome, correctedOutcome, timestamp, notes);
+    }
+
+    public synchronized List<AttemptAuditRecord> getAuditHistoryForQuestion(long questionLogId) {
+        return dbManager.getAuditHistoryForQuestion(questionLogId);
+    }
+
+    public synchronized List<AttemptAuditRecord> getAuditHistoryForSession(long sessionId) {
+        return dbManager.getAuditHistoryForSession(sessionId);
+    }
+
+    public synchronized List<AttemptAuditRecord> getAllAuditHistory() {
+        return dbManager.getAllAuditHistory();
     }
 
     public TargetCompliance computeTargetCompliance(SessionStats session) {

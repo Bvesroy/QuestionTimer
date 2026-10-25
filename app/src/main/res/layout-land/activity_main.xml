@@ -151,6 +151,47 @@
 
     </LinearLayout>
 
+    <!-- Transient Undo Notification Banner -->
+    <LinearLayout
+        android:id="@+id/layoutUndoBanner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/bottomControlsContainer"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_dialog_card"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvUndoMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.06"
+            android:text="Q1: SOLVED (01:23.4)"
+            android:textColor="@color/text_primary"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnUndoAnswer"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_pill_accent"
+            android:fontFamily="sans-serif-bold"
+            android:letterSpacing="0.08"
+            android:paddingHorizontal="10dp"
+            android:text="UNDO"
+            android:textColor="@color/accent_running"
+            android:textSize="10sp" />
+    </LinearLayout>
+
     <!-- Subtle Bottom Control Bar (4 Auto-Hiding Buttons) -->
     <LinearLayout
         android:id="@+id/bottomControlsContainer"

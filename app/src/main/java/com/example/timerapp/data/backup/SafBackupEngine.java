@@ -29,13 +29,14 @@ import java.util.Set;
 /**
  * Production-grade SAF (Storage Access Framework) Backup & Restore Engine.
  * Exports and restores complete database snapshots with SHA-256 integrity validation,
- * schema versioning, transaction rollbacks, and dual restore modes (REPLACE / MERGE).
+ * schema versioning (up to Version 4), transaction rollbacks, and dual restore modes (REPLACE / MERGE).
+ * Fully backward-compatible with v1, v2, and v3 backups.
  */
 public class SafBackupEngine {
 
     private static final String TAG = "SafBackupEngine";
-    public static final int BACKUP_SCHEMA_VERSION = 3;
-    public static final int APP_VERSION_CODE = 3;
+    public static final int BACKUP_SCHEMA_VERSION = 4;
+    public static final int APP_VERSION_CODE = 4;
     public static final String APP_ID = "QuestionSolvingTimer";
 
     public enum RestoreMode {
@@ -71,11 +72,21 @@ public class SafBackupEngine {
         public final int countdownsRestored;
         public final int achievementsRestored;
         public final int profilesRestored;
+        public final int auditRecordsRestored;
+        public final int settingsRestored;
         public final String message;
 
         public RestoreResult(boolean success, int sessionsRestored, int logsRestored,
                              int breaksRestored, int subjectsRestored, int countdownsRestored,
                              int achievementsRestored, int profilesRestored, String message) {
+            this(success, sessionsRestored, logsRestored, breaksRestored, subjectsRestored,
+                    countdownsRestored, achievementsRestored, profilesRestored, 0, 0, message);
+        }
+
+        public RestoreResult(boolean success, int sessionsRestored, int logsRestored,
+                             int breaksRestored, int subjectsRestored, int countdownsRestored,
+                             int achievementsRestored, int profilesRestored,
+                             int auditRecordsRestored, int settingsRestored, String message) {
             this.success = success;
             this.sessionsRestored = sessionsRestored;
             this.logsRestored = logsRestored;
@@ -84,12 +95,15 @@ public class SafBackupEngine {
             this.countdownsRestored = countdownsRestored;
             this.achievementsRestored = achievementsRestored;
             this.profilesRestored = profilesRestored;
+            this.auditRecordsRestored = auditRecordsRestored;
+            this.settingsRestored = settingsRestored;
             this.message = message;
         }
 
         public int getTotalItemsRestored() {
             return sessionsRestored + logsRestored + breaksRestored +
-                    subjectsRestored + countdownsRestored + achievementsRestored + profilesRestored;
+                    subjectsRestored + countdownsRestored + achievementsRestored +
+                    profilesRestored + auditRecordsRestored + settingsRestored;
         }
     }
 
@@ -139,6 +153,14 @@ public class SafBackupEngine {
         JSONArray profilesArray = exportExamProfilesTable(db);
         data.put("exam_profiles", profilesArray);
 
+        // 8. Attempt Audit History (Version 4)
+        JSONArray auditArray = exportAuditHistoryTable(db);
+        data.put("audit_history", auditArray);
+
+        // 9. Settings / Preferences (Version 4)
+        JSONArray settingsArray = exportSettingsTable(db);
+        data.put("settings", settingsArray);
+
         // Record Counts
         JSONObject counts = new JSONObject();
         counts.put("sessions", sessionsArray.length());
@@ -148,10 +170,47 @@ public class SafBackupEngine {
         counts.put("exam_countdowns", countdownsArray.length());
         counts.put("achievements", achievementsArray.length());
         counts.put("exam_profiles", profilesArray.length());
+        counts.put("audit_history", auditArray.length());
+        counts.put("settings", settingsArray.length());
         root.put("record_counts", counts);
 
         root.put("data", data);
-        root.put("preferences", userPreferences != null ? userPreferences : new JSONObject());
+
+        // Build preferences object including wallpaper settings, target date, widget settings
+        JSONObject prefs = (userPreferences != null) ? new JSONObject(userPreferences.toString()) : new JSONObject();
+        if (!prefs.has("target_date")) {
+            prefs.put("target_date", getSettingValue(db, "target_date", "2027-01-20"));
+        }
+        if (!prefs.has("two_zone_enabled")) {
+            prefs.put("two_zone_enabled", Boolean.parseBoolean(getSettingValue(db, "two_zone_enabled", "false")));
+        }
+        if (!prefs.has("wallpaper_settings")) {
+            String wpStr = getSettingValue(db, "wallpaper_preferences", "");
+            if (!wpStr.isEmpty()) {
+                try {
+                    prefs.put("wallpaper_settings", new JSONObject(wpStr));
+                } catch (Exception ignored) {}
+            }
+        }
+        if (!prefs.has("widget_settings")) {
+            String wgStr = getSettingValue(db, "widget_settings", "");
+            if (!wgStr.isEmpty()) {
+                try {
+                    prefs.put("widget_settings", new JSONObject(wgStr));
+                } catch (Exception ignored) {}
+            }
+        }
+
+        root.put("preferences", prefs);
+        root.put("target_date", prefs.optString("target_date", "2027-01-20"));
+        root.put("two_zone_enabled", prefs.optBoolean("two_zone_enabled", false));
+        if (prefs.has("wallpaper_settings")) {
+            root.put("wallpaper_settings", prefs.get("wallpaper_settings"));
+        }
+        if (prefs.has("widget_settings")) {
+            root.put("widget_settings", prefs.get("widget_settings"));
+        }
+        root.put("audit_history", auditArray);
 
         // Calculate and embed SHA-256 checksum over data payload
         String dataPayload = data.toString();
@@ -193,11 +252,15 @@ public class SafBackupEngine {
                 totalRecords += counts.optInt("exam_countdowns", 0);
                 totalRecords += counts.optInt("achievements", 0);
                 totalRecords += counts.optInt("exam_profiles", 0);
+                totalRecords += counts.optInt("audit_history", 0);
+                totalRecords += counts.optInt("settings", 0);
             } else if (data != null) {
                 JSONArray s = data.optJSONArray("sessions");
                 if (s != null) totalRecords += s.length();
                 JSONArray q = data.optJSONArray("question_logs");
                 if (q != null) totalRecords += q.length();
+                JSONArray a = data.optJSONArray("audit_history");
+                if (a != null) totalRecords += a.length();
             } else if (root.has("sessions")) {
                 JSONArray s = root.optJSONArray("sessions");
                 if (s != null) totalRecords += s.length();
@@ -208,6 +271,10 @@ public class SafBackupEngine {
                 String expectedChecksum = root.getString("checksum_sha256");
                 String actualChecksum = computeSha256(data.toString());
                 checksumVerified = expectedChecksum.equalsIgnoreCase(actualChecksum);
+                if (!checksumVerified) {
+                    return new ValidationResult(false, version, timestamp, totalRecords, false,
+                            "SHA-256 checksum mismatch: backup archive has been modified or corrupted.");
+                }
             } else {
                 // Older backups without checksum are accepted if JSON structure is valid
                 checksumVerified = true;
@@ -221,6 +288,7 @@ public class SafBackupEngine {
 
     /**
      * Atomically restores database state from an InputStream using REPLACE or MERGE mode.
+     * Guarantees rollback on error and maintains foreign key consistency.
      */
     public static RestoreResult restoreBackup(SQLiteDatabase db, InputStream inputStream, RestoreMode mode)
             throws IOException, JSONException {
@@ -238,6 +306,15 @@ public class SafBackupEngine {
             dataObj = root;
         }
 
+        // Verify SHA-256 tamper verification before modifying database
+        if (root.has("checksum_sha256") && root.has("data")) {
+            String expectedChecksum = root.getString("checksum_sha256");
+            String actualChecksum = computeSha256(root.getJSONObject("data").toString());
+            if (!expectedChecksum.equalsIgnoreCase(actualChecksum)) {
+                throw new SecurityException("SHA-256 checksum mismatch: backup archive has been tampered with or corrupted.");
+            }
+        }
+
         int sessionsRestored = 0;
         int logsRestored = 0;
         int breaksRestored = 0;
@@ -245,11 +322,19 @@ public class SafBackupEngine {
         int countdownsRestored = 0;
         int achievementsRestored = 0;
         int profilesRestored = 0;
+        int auditRecordsRestored = 0;
+        int settingsRestored = 0;
 
         db.beginTransaction();
         try {
             if (mode == RestoreMode.REPLACE) {
                 // Clear all existing data
+                try {
+                    db.delete(DatabaseContract.AttemptAuditEntry.TABLE_NAME, null, null);
+                } catch (Exception ignored) {}
+                try {
+                    db.delete(DatabaseContract.SettingEntry.TABLE_NAME, null, null);
+                } catch (Exception ignored) {}
                 db.delete(DatabaseContract.BreakEntry.TABLE_NAME, null, null);
                 db.delete(DatabaseContract.QuestionLogEntry.TABLE_NAME, null, null);
                 db.delete(DatabaseContract.SessionEntry.TABLE_NAME, null, null);
@@ -259,8 +344,9 @@ public class SafBackupEngine {
                 db.delete(DatabaseContract.ExamProfileEntry.TABLE_NAME, null, null);
             }
 
-            // Map oldSessionId -> newSessionId for foreign key preservation
+            // Map oldSessionId -> newSessionId and oldLogId -> newLogId for foreign key preservation
             Map<Long, Long> sessionIdMap = new HashMap<>();
+            Map<Long, Long> logIdMap = new HashMap<>();
 
             // 1. Restore Sessions
             JSONArray sessionsArray = dataObj.optJSONArray("sessions");
@@ -303,7 +389,11 @@ public class SafBackupEngine {
                         JSONArray nestedLogs = sObj.getJSONArray("question_logs");
                         for (int k = 0; k < nestedLogs.length(); k++) {
                             JSONObject logObj = nestedLogs.getJSONObject(k);
-                            insertQuestionLog(db, newId, logObj);
+                            long oldLogId = logObj.optLong("id", 0);
+                            long newLogId = insertQuestionLog(db, newId, logObj);
+                            if (oldLogId > 0) {
+                                logIdMap.put(oldLogId, newLogId);
+                            }
                             logsRestored++;
                         }
                     }
@@ -318,7 +408,11 @@ public class SafBackupEngine {
                     long oldSessionId = logObj.optLong("session_id", 0);
                     Long newSessionId = sessionIdMap.get(oldSessionId);
                     if (newSessionId != null) {
-                        insertQuestionLog(db, newSessionId, logObj);
+                        long oldLogId = logObj.optLong("id", 0);
+                        long newLogId = insertQuestionLog(db, newSessionId, logObj);
+                        if (oldLogId > 0) {
+                            logIdMap.put(oldLogId, newLogId);
+                        }
                         logsRestored++;
                     }
                 }
@@ -402,9 +496,94 @@ public class SafBackupEngine {
                 }
             }
 
+            // 8. Restore Attempt Audit History (Version 4)
+            JSONArray auditArray = dataObj.optJSONArray("audit_history");
+            if (auditArray == null) {
+                auditArray = root.optJSONArray("audit_history");
+            }
+            if (auditArray != null) {
+                for (int i = 0; i < auditArray.length(); i++) {
+                    JSONObject aObj = auditArray.getJSONObject(i);
+                    long oldLogId = aObj.optLong("question_log_id", 0);
+                    Long newLogId = logIdMap.get(oldLogId);
+                    if (newLogId == null) newLogId = oldLogId;
+
+                    long oldSessionId = aObj.optLong("session_id", 0);
+                    Long newSessionId = sessionIdMap.get(oldSessionId);
+                    if (newSessionId == null) newSessionId = oldSessionId;
+
+                    ContentValues aCv = new ContentValues();
+                    aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_QUESTION_LOG_ID, newLogId);
+                    aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_SESSION_ID, newSessionId);
+                    aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_ORIGINAL_OUTCOME, aObj.optString("original_outcome", ""));
+                    aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTED_OUTCOME, aObj.optString("corrected_outcome", ""));
+                    aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_CORRECTION_TIMESTAMP, aObj.optLong("correction_timestamp", System.currentTimeMillis()));
+                    aCv.put(DatabaseContract.AttemptAuditEntry.COLUMN_NOTES, aObj.optString("notes", ""));
+
+                    long res = db.insertWithOnConflict(DatabaseContract.AttemptAuditEntry.TABLE_NAME, null, aCv, SQLiteDatabase.CONFLICT_IGNORE);
+                    if (res != -1) auditRecordsRestored++;
+                }
+            }
+
+            // 9. Restore Settings (Version 4)
+            JSONArray settingsArray = dataObj.optJSONArray("settings");
+            if (settingsArray != null) {
+                for (int i = 0; i < settingsArray.length(); i++) {
+                    JSONObject sObj = settingsArray.getJSONObject(i);
+                    String k = sObj.optString("key", "");
+                    String v = sObj.optString("value", "");
+                    if (!k.isEmpty()) {
+                        ContentValues sCv = new ContentValues();
+                        sCv.put(DatabaseContract.SettingEntry.COLUMN_KEY, k);
+                        sCv.put(DatabaseContract.SettingEntry.COLUMN_VALUE, v);
+                        long res = db.insertWithOnConflict(DatabaseContract.SettingEntry.TABLE_NAME, null, sCv, SQLiteDatabase.CONFLICT_REPLACE);
+                        if (res != -1) settingsRestored++;
+                    }
+                }
+            }
+
+            // Also restore settings from preferences / root fields if present
+            JSONObject prefsObj = root.optJSONObject("preferences");
+            if (prefsObj != null) {
+                if (prefsObj.has("target_date")) {
+                    saveSettingToDb(db, "target_date", prefsObj.getString("target_date"));
+                    settingsRestored++;
+                }
+                if (prefsObj.has("two_zone_enabled")) {
+                    saveSettingToDb(db, "two_zone_enabled", String.valueOf(prefsObj.optBoolean("two_zone_enabled", false)));
+                    settingsRestored++;
+                }
+                if (prefsObj.has("wallpaper_settings")) {
+                    saveSettingToDb(db, "wallpaper_preferences", prefsObj.get("wallpaper_settings").toString());
+                    settingsRestored++;
+                }
+                if (prefsObj.has("widget_settings")) {
+                    saveSettingToDb(db, "widget_settings", prefsObj.get("widget_settings").toString());
+                    settingsRestored++;
+                }
+            } else {
+                if (root.has("target_date")) {
+                    saveSettingToDb(db, "target_date", root.getString("target_date"));
+                    settingsRestored++;
+                }
+                if (root.has("two_zone_enabled")) {
+                    saveSettingToDb(db, "two_zone_enabled", String.valueOf(root.optBoolean("two_zone_enabled", false)));
+                    settingsRestored++;
+                }
+                if (root.has("wallpaper_settings")) {
+                    saveSettingToDb(db, "wallpaper_preferences", root.get("wallpaper_settings").toString());
+                    settingsRestored++;
+                }
+                if (root.has("widget_preferences")) {
+                    saveSettingToDb(db, "widget_settings", root.get("widget_preferences").toString());
+                    settingsRestored++;
+                }
+            }
+
             db.setTransactionSuccessful();
             return new RestoreResult(true, sessionsRestored, logsRestored, breaksRestored,
                     subjectsRestored, countdownsRestored, achievementsRestored, profilesRestored,
+                    auditRecordsRestored, settingsRestored,
                     "Successfully restored backup (mode: " + mode.name() + ").");
         } finally {
             db.endTransaction();
@@ -415,7 +594,7 @@ public class SafBackupEngine {
     // Private Helpers
     // =========================================================================
 
-    private static void insertQuestionLog(SQLiteDatabase db, long sessionId, JSONObject logObj) {
+    private static long insertQuestionLog(SQLiteDatabase db, long sessionId, JSONObject logObj) {
         ContentValues cv = new ContentValues();
         cv.put(DatabaseContract.QuestionLogEntry.COLUMN_SESSION_ID, sessionId);
         cv.put(DatabaseContract.QuestionLogEntry.COLUMN_QUESTION_NUM, logObj.optInt("question_num", 1));
@@ -430,7 +609,37 @@ public class SafBackupEngine {
         cv.put(DatabaseContract.QuestionLogEntry.COLUMN_MISTAKE_TAG, logObj.optString("mistake_tag", ""));
         cv.put(DatabaseContract.QuestionLogEntry.COLUMN_NOTES, logObj.optString("notes", ""));
 
-        db.insertOrThrow(DatabaseContract.QuestionLogEntry.TABLE_NAME, null, cv);
+        cv.put(DatabaseContract.QuestionLogEntry.COLUMN_ORIGINAL_OUTCOME, logObj.optString("original_outcome", ""));
+        cv.put(DatabaseContract.QuestionLogEntry.COLUMN_CORRECTION_TIMESTAMP, logObj.optLong("correction_timestamp", 0L));
+
+        return db.insertOrThrow(DatabaseContract.QuestionLogEntry.TABLE_NAME, null, cv);
+    }
+
+    private static void saveSettingToDb(SQLiteDatabase db, String key, String value) {
+        if (key == null || value == null) return;
+        try {
+            ContentValues cv = new ContentValues();
+            cv.put(DatabaseContract.SettingEntry.COLUMN_KEY, key);
+            cv.put(DatabaseContract.SettingEntry.COLUMN_VALUE, value);
+            db.insertWithOnConflict(DatabaseContract.SettingEntry.TABLE_NAME, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to save setting to DB: " + key, e);
+        }
+    }
+
+    private static String getSettingValue(SQLiteDatabase db, String key, String defaultValue) {
+        try {
+            String query = "SELECT " + DatabaseContract.SettingEntry.COLUMN_VALUE +
+                    " FROM " + DatabaseContract.SettingEntry.TABLE_NAME +
+                    " WHERE " + DatabaseContract.SettingEntry.COLUMN_KEY + " = ? LIMIT 1";
+            try (Cursor c = db.rawQuery(query, new String[]{key})) {
+                if (c != null && c.moveToFirst()) {
+                    return c.getString(0);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return defaultValue;
     }
 
     private static boolean isDuplicateSession(SQLiteDatabase db, String name, long createdAt) {
@@ -595,6 +804,60 @@ public class SafBackupEngine {
                 }
                 arr.put(obj);
             }
+        }
+        return arr;
+    }
+
+    private static JSONArray exportAuditHistoryTable(SQLiteDatabase db) throws JSONException {
+        JSONArray arr = new JSONArray();
+        try {
+            String query = "SELECT * FROM " + DatabaseContract.AttemptAuditEntry.TABLE_NAME + " ORDER BY id ASC";
+            try (Cursor c = db.rawQuery(query, null)) {
+                while (c != null && c.moveToNext()) {
+                    JSONObject obj = new JSONObject();
+                    for (int i = 0; i < c.getColumnCount(); i++) {
+                        String col = c.getColumnName(i);
+                        int type = c.getType(i);
+                        if (type == Cursor.FIELD_TYPE_INTEGER) {
+                            obj.put(col, c.getLong(i));
+                        } else if (type == Cursor.FIELD_TYPE_FLOAT) {
+                            obj.put(col, c.getDouble(i));
+                        } else if (type == Cursor.FIELD_TYPE_NULL) {
+                            obj.put(col, JSONObject.NULL);
+                        } else {
+                            obj.put(col, c.getString(i));
+                        }
+                    }
+                    arr.put(obj);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Table " + DatabaseContract.AttemptAuditEntry.TABLE_NAME + " does not exist or error reading: " + e.getMessage());
+        }
+        return arr;
+    }
+
+    private static JSONArray exportSettingsTable(SQLiteDatabase db) throws JSONException {
+        JSONArray arr = new JSONArray();
+        try {
+            String query = "SELECT * FROM " + DatabaseContract.SettingEntry.TABLE_NAME + " ORDER BY id ASC";
+            try (Cursor c = db.rawQuery(query, null)) {
+                while (c != null && c.moveToNext()) {
+                    JSONObject obj = new JSONObject();
+                    for (int i = 0; i < c.getColumnCount(); i++) {
+                        String col = c.getColumnName(i);
+                        int type = c.getType(i);
+                        if (type == Cursor.FIELD_TYPE_INTEGER) {
+                            obj.put(col, c.getLong(i));
+                        } else {
+                            obj.put(col, c.getString(i));
+                        }
+                    }
+                    arr.put(obj);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Table " + DatabaseContract.SettingEntry.TABLE_NAME + " does not exist or error reading: " + e.getMessage());
         }
         return arr;
     }

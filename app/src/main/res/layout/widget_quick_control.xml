@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetQuickControlRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_dialog_card"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Top Row: Status & Current Question / Timer -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvQuickControlStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-bold"
+            android:letterSpacing="0.1"
+            android:text="JEE TIMER"
+            android:textColor="@color/accent_highlight"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/tvQuickControlTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:text="00:00"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Quick Buttons Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnWidgetToggle"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_accent"
+            android:letterSpacing="0.06"
+            android:text="PLAY"
+            android:textColor="@color/accent_running"
+            android:textSize="10sp" />
+
+        <Button
+            android:id="@+id/btnWidgetBreak"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginHorizontal="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_orange"
+            android:letterSpacing="0.06"
+            android:text="BREAK"
+            android:textColor="@color/accent_paused"
+            android:textSize="10sp" />
+
+        <Button
+            android:id="@+id/btnWidgetOpen"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_unselected"
+            android:letterSpacing="0.06"
+            android:text="OPEN"
+            android:textColor="@color/text_primary"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -41,6 +41,11 @@ public final class DatabaseContract {
         public static final String COLUMN_TOTAL_BREAK_DURATION_MS = "total_break_duration_ms";
         public static final String COLUMN_IS_MOCK_TEST = "is_mock_test";
 
+        // Version 4 extended columns (Wallpaper & widget integration)
+        public static final String COLUMN_WALLPAPER_PATH = "wallpaper_path";
+        public static final String COLUMN_WALLPAPER_ALPHA = "wallpaper_alpha";
+        public static final String COLUMN_WIDGET_CONFIG_ID = "widget_config_id";
+
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
                         COLUMN_ALT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -58,7 +63,10 @@ public final class DatabaseContract {
                         COLUMN_EXAM_PROFILE + " TEXT DEFAULT 'PRACTICE', " +
                         COLUMN_TOTAL_STUDY_DURATION_MS + " INTEGER DEFAULT 0, " +
                         COLUMN_TOTAL_BREAK_DURATION_MS + " INTEGER DEFAULT 0, " +
-                        COLUMN_IS_MOCK_TEST + " INTEGER DEFAULT 0" +
+                        COLUMN_IS_MOCK_TEST + " INTEGER DEFAULT 0, " +
+                        COLUMN_WALLPAPER_PATH + " TEXT DEFAULT '', " +
+                        COLUMN_WALLPAPER_ALPHA + " REAL DEFAULT 1.0, " +
+                        COLUMN_WIDGET_CONFIG_ID + " TEXT DEFAULT ''" +
                         ");";
 
         public static final String SQL_CREATE_IDX_IS_ACTIVE =
@@ -370,6 +378,43 @@ public final class DatabaseContract {
         public static final String SQL_CREATE_IDX_TIMESTAMP =
                 "CREATE INDEX IF NOT EXISTS idx_audit_correction_time ON " +
                         TABLE_NAME + " (" + COLUMN_CORRECTION_TIMESTAMP + " DESC);";
+
+        public static final String SQL_DROP_TABLE =
+                "DROP TABLE IF EXISTS " + TABLE_NAME + ";";
+    }
+
+    /**
+     * Widget configuration table schema (Version 4).
+     */
+    public static final class WidgetConfigEntry implements BaseColumns {
+        public static final String TABLE_NAME = "widget_configs";
+        public static final String COLUMN_ID = "_id";
+        public static final String COLUMN_ALT_ID = "id";
+        public static final String COLUMN_WIDGET_ID = "widget_id";
+        public static final String COLUMN_TARGET_EXAM_NAME = "target_exam_name";
+        public static final String COLUMN_COUNTDOWN_DAYS = "countdown_days";
+        public static final String COLUMN_THEME = "theme";
+        public static final String COLUMN_TRANSPARENCY = "transparency";
+        public static final String COLUMN_WALLPAPER_URI = "wallpaper_uri";
+        public static final String COLUMN_REFRESH_INTERVAL_SEC = "refresh_interval_sec";
+        public static final String COLUMN_IS_ACTIVE = "is_active";
+        public static final String COLUMN_CREATED_AT = "created_at";
+        public static final String COLUMN_UPDATED_AT = "updated_at";
+
+        public static final String SQL_CREATE_TABLE =
+                "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
+                        COLUMN_ALT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        COLUMN_WIDGET_ID + " TEXT UNIQUE NOT NULL, " +
+                        COLUMN_TARGET_EXAM_NAME + " TEXT DEFAULT 'JEE ADVANCED', " +
+                        COLUMN_COUNTDOWN_DAYS + " INTEGER DEFAULT 142, " +
+                        COLUMN_THEME + " TEXT DEFAULT 'AMOLED_BLACK', " +
+                        COLUMN_TRANSPARENCY + " REAL DEFAULT 0.85, " +
+                        COLUMN_WALLPAPER_URI + " TEXT DEFAULT '', " +
+                        COLUMN_REFRESH_INTERVAL_SEC + " INTEGER DEFAULT 60, " +
+                        COLUMN_IS_ACTIVE + " INTEGER DEFAULT 1, " +
+                        COLUMN_CREATED_AT + " INTEGER NOT NULL, " +
+                        COLUMN_UPDATED_AT + " INTEGER NOT NULL" +
+                        ");";
 
         public static final String SQL_DROP_TABLE =
                 "DROP TABLE IF EXISTS " + TABLE_NAME + ";";

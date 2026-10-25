@@ -5,6 +5,7 @@ import android.content.Context;
 import com.example.timerapp.data.local.sqlite.TimerDatabaseManager;
 import com.example.timerapp.data.model.Achievement;
 import com.example.timerapp.data.model.AdaptiveTargetSuggestion;
+import com.example.timerapp.data.model.AttemptAuditRecord;
 import com.example.timerapp.data.model.DailyPracticeDataPoint;
 import com.example.timerapp.data.model.DataIntegrityReport;
 import com.example.timerapp.data.model.DateSessionGroup;
@@ -22,6 +23,8 @@ import com.example.timerapp.data.model.SpeedDataPoint;
 import com.example.timerapp.data.model.Subject;
 import com.example.timerapp.data.model.SubjectPracticeStats;
 import com.example.timerapp.data.model.TargetCompliance;
+import com.example.timerapp.data.model.WallpaperPreferences;
+import com.example.timerapp.data.model.WidgetSettings;
 import com.example.timerapp.data.backup.SafBackupEngine;
 import com.example.timerapp.data.model.BreakLog;
 import com.example.timerapp.data.model.ExamProfile;
@@ -42,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Repository providing clean abstraction over local SQLite persistence layer.
@@ -359,6 +363,80 @@ public class TimerRepository {
 
     public void setTargetSessionQuestions(int count) {
         dbManager.setTargetSessionQuestions(count);
+    }
+
+    // =========================================================================
+    // Version 4 Settings & Preferences Storage APIs
+    // =========================================================================
+
+    public String getTargetDate() {
+        return dbManager.getTargetDate();
+    }
+
+    public void setTargetDate(String date) {
+        dbManager.setTargetDate(date);
+    }
+
+    public boolean isTwoZoneEnabled() {
+        return dbManager.isTwoZoneEnabled();
+    }
+
+    public void setTwoZoneEnabled(boolean enabled) {
+        dbManager.setTwoZoneEnabled(enabled);
+    }
+
+    public WallpaperPreferences getWallpaperPreferences() {
+        return dbManager.getWallpaperPreferences();
+    }
+
+    public void saveWallpaperPreferences(WallpaperPreferences prefs) {
+        dbManager.saveWallpaperPreferences(prefs);
+    }
+
+    public WidgetSettings getWidgetSettings() {
+        return dbManager.getWidgetSettings();
+    }
+
+    public void saveWidgetSettings(WidgetSettings settings) {
+        dbManager.saveWidgetSettings(settings);
+    }
+
+    public String getSetting(String key, String defaultValue) {
+        return dbManager.getSetting(key, defaultValue);
+    }
+
+    public boolean saveSetting(String key, String value) {
+        return dbManager.saveSetting(key, value);
+    }
+
+    public Map<String, String> getAllSettings() {
+        return dbManager.getAllSettings();
+    }
+
+    // =========================================================================
+    // Version 4 Attempt Audit History APIs
+    // =========================================================================
+
+    public boolean logAttemptCorrection(long questionLogId, String newOutcome, String notes) {
+        return dbManager.logAttemptCorrection(questionLogId, newOutcome, notes);
+    }
+
+    public boolean logAttemptCorrection(long questionLogId, long sessionId,
+                                        String originalOutcome, String correctedOutcome,
+                                        long timestamp, String notes) {
+        return dbManager.logAttemptCorrection(questionLogId, sessionId, originalOutcome, correctedOutcome, timestamp, notes);
+    }
+
+    public List<AttemptAuditRecord> getAuditHistoryForQuestion(long questionLogId) {
+        return dbManager.getAuditHistoryForQuestion(questionLogId);
+    }
+
+    public List<AttemptAuditRecord> getAuditHistoryForSession(long sessionId) {
+        return dbManager.getAuditHistoryForSession(sessionId);
+    }
+
+    public List<AttemptAuditRecord> getAllAuditHistory() {
+        return dbManager.getAllAuditHistory();
     }
 
     public TargetCompliance computeTargetCompliance(SessionStats session) {

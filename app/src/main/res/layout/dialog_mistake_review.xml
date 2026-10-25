@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/amoled_black"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Top Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="0.12"
+                android:text="MISTAKE REVIEW NOTEBOOK"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/tvMistakeCountSummary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:letterSpacing="0.06"
+                android:text="Filter by exam profile, subject, topic, and mistake type"
+                android:textColor="@color/accent_paused"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnCloseMistakeReview"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_button_subtle"
+            android:contentDescription="Close"
+            android:src="@drawable/ic_close"
+            android:tint="@color/text_secondary" />
+    </LinearLayout>
+
+    <!-- Search Topic Bar -->
+    <EditText
+        android:id="@+id/etMistakeSearchTopic"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_pill_unselected"
+        android:hint="Search topic, question #, or notes..."
+        android:paddingHorizontal="14dp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_hint"
+        android:textSize="12sp" />
+
+    <!-- Filter 1: Exam Profile -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:letterSpacing="0.08"
+        android:text="EXAM PROFILE"
+        android:textColor="@color/text_secondary"
+        android:textSize="9sp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/filterProfileAll"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_selected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="ALL PROFILES"
+                android:textColor="@color/accent_highlight"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterProfileJeeMain"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="JEE MAIN"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterProfileJeeAdv"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="JEE ADVANCED"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterProfilePractice"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="PRACTICE"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Filter 2: Subject -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:letterSpacing="0.08"
+        android:text="SUBJECT"
+        android:textColor="@color/text_secondary"
+        android:textSize="9sp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/filterSubjectAll"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_selected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="ALL"
+                android:textColor="@color/accent_highlight"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterSubjectPhysics"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="PHYSICS"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterSubjectChemistry"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="CHEMISTRY"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterSubjectMath"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="MATHEMATICS"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterSubjectGeneral"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="GENERAL"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Filter 3: Mistake Type & Outcome -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:letterSpacing="0.08"
+        android:text="MISTAKE CATEGORY"
+        android:textColor="@color/text_secondary"
+        android:textSize="9sp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/filterTagAll"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_selected"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:text="ALL"
+                android:textColor="@color/accent_highlight"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterTagSilly"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:text="SILLY MISTAKE"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterTagConceptual"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:text="CONCEPTUAL"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterTagCalc"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:text="CALCULATION"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterTagTime"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:text="TIME PRESSURE"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/filterTagMisread"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_pill_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:text="MISREAD"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Empty View -->
+    <TextView
+        android:id="@+id/tvEmptyMistakes"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:letterSpacing="0.06"
+        android:text="✓ No mistakes match the selected filters.\nGreat work!"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <!-- Mistake Questions ListView -->
+    <ListView
+        android:id="@+id/lvMistakeQuestions"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:scrollbars="vertical" />
+
+</LinearLayout>

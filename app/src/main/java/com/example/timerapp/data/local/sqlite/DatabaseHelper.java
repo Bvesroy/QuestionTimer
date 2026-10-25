@@ -88,6 +88,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_SESSION_ID);
             db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_TIMESTAMP);
 
+            db.execSQL(DatabaseContract.WidgetConfigEntry.SQL_CREATE_TABLE);
+
             preseedDefaultSubjects(db);
             preseedDefaultExamProfiles(db);
             preseedDefaultSettings(db);
@@ -159,6 +161,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
 
             if (oldVersion < 4) {
+                // Safely migrate sessions table with v4 wallpaper & widget columns
+                addColumnSafely(db, DatabaseContract.SessionEntry.TABLE_NAME, DatabaseContract.SessionEntry.COLUMN_WALLPAPER_PATH, "TEXT DEFAULT ''");
+                addColumnSafely(db, DatabaseContract.SessionEntry.TABLE_NAME, DatabaseContract.SessionEntry.COLUMN_WALLPAPER_ALPHA, "REAL DEFAULT 1.0");
+                addColumnSafely(db, DatabaseContract.SessionEntry.TABLE_NAME, DatabaseContract.SessionEntry.COLUMN_WIDGET_CONFIG_ID, "TEXT DEFAULT ''");
+
                 // Safely migrate question_logs table with v4 audit columns
                 addColumnSafely(db, DatabaseContract.QuestionLogEntry.TABLE_NAME, DatabaseContract.QuestionLogEntry.COLUMN_ORIGINAL_OUTCOME, "TEXT DEFAULT ''");
                 addColumnSafely(db, DatabaseContract.QuestionLogEntry.TABLE_NAME, DatabaseContract.QuestionLogEntry.COLUMN_CORRECTION_TIMESTAMP, "INTEGER DEFAULT 0");
@@ -172,8 +179,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_SESSION_ID);
                 db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_TIMESTAMP);
 
+                db.execSQL(DatabaseContract.WidgetConfigEntry.SQL_CREATE_TABLE);
+
                 preseedDefaultSettings(db);
-                Log.i(TAG, "Upgraded schema to version 4: added settings preferences storage and attempt audit history.");
+                Log.i(TAG, "Upgraded schema to version 4: added settings preferences, wallpaper, widgets, and attempt audit history.");
             }
 
             db.setTransactionSuccessful();

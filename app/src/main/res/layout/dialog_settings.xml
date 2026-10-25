@@ -913,6 +913,88 @@
                     android:layout_marginVertical="12dp"
                     android:background="@color/amoled_divider" />
 
+                <!-- Two-Zone Answer Recording Setting -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.1"
+                    android:text="TWO-ZONE ANSWER RECORDING"
+                    android:textColor="@color/accent_highlight"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <CheckBox
+                    android:id="@+id/cbTwoZoneAnswer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:checked="false"
+                    android:text="Tap to Record Answer Outcome"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Splits active interaction screen into Upper (Incorrect) and Lower (Correct) with invisible boundary. Authoritatively logs duration, outcome, and advances question without resetting Total Study Clock."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="10sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="@color/amoled_divider" />
+
+                <!-- Adaptive JEE Progress Wallpaper Setting -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.1"
+                    android:text="ADAPTIVE JEE PROGRESS WALLPAPER"
+                    android:textColor="@color/accent_paused"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <CheckBox
+                    android:id="@+id/cbAutoApplyWallpaper"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:checked="false"
+                    android:text="Auto-Apply Wallpaper on Session Completion"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btnPreviewWallpaper"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_pill_accent"
+                    android:letterSpacing="0.08"
+                    android:text="🖼️ PREVIEW &amp; GENERATE WALLPAPER"
+                    android:textColor="@color/accent_running"
+                    android:textSize="11sp" />
+
+                <Button
+                    android:id="@+id/btnOpenMistakeReview"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_pill_unselected"
+                    android:letterSpacing="0.08"
+                    android:text="📖 MISTAKE REVIEW NOTEBOOK"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="12dp"
+                    android:background="@color/amoled_divider" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

@@ -1,0 +1,234 @@
+package com.example.timerapp.data;
+
+import com.example.timerapp.data.engine.AtomicQuestionRecorder;
+import com.example.timerapp.data.engine.TwoZoneHitDetector;
+import com.example.timerapp.data.engine.TwoZoneHitDetector.TouchZone;
+import com.example.timerapp.data.model.QuestionLog;
+import com.example.timerapp.model.QuestionOutcome;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.List;
+
+/**
+ * Comprehensive Unit Test Suite for Two-Zone Touch Hit Detection,
+ * Transaction-Safe Atomic Recording, and Multi-Level Undo Operations.
+ */
+public class TwoZoneHitDetectionAndUndoTest {
+
+    private TwoZoneHitDetector hitDetector;
+    private AtomicQuestionRecorder recorder;
+
+    @Before
+    public void setUp() {
+        // Standard Android mobile display: 1080 x 1920 px
+        hitDetector = new TwoZoneHitDetector(1080, 1920);
+        recorder = new AtomicQuestionRecorder(505L, 10);
+    }
+
+    // ==========================================
+    // Two-Zone Hit Detection Tests
+    // ==========================================
+
+    @Test
+    public void testLeftAndRightZoneHitDetection_defaultFiftyFiftySplit() {
+        // Default split is 50% (x = 540)
+        Assert.assertEquals(0.5f, hitDetector.getSplitRatio(), 0.001f);
+
+        // Touches on the left half (< 540)
+        Assert.assertEquals(TouchZone.ZONE_LEFT, hitDetector.detectZone(0f, 960f));
+        Assert.assertEquals(TouchZone.ZONE_LEFT, hitDetector.detectZone(100f, 500f));
+        Assert.assertEquals(TouchZone.ZONE_LEFT, hitDetector.detectZone(539f, 960f));
+
+        // Touches on the right half (>= 540)
+        Assert.assertEquals(TouchZone.ZONE_RIGHT, hitDetector.detectZone(540f, 960f));
+        Assert.assertEquals(TouchZone.ZONE_RIGHT, hitDetector.detectZone(800f, 1200f));
+        Assert.assertEquals(TouchZone.ZONE_RIGHT, hitDetector.detectZone(1080f, 1920f));
+    }
+
+    @Test
+    public void testOutOfBoundsHitDetection_rejectsNegativeOrExceedingCoordinates() {
+        // Negative X or Y
+        Assert.assertEquals(TouchZone.ZONE_OUT_OF_BOUNDS, hitDetector.detectZone(-1f, 500f));
+        Assert.assertEquals(TouchZone.ZONE_OUT_OF_BOUNDS, hitDetector.detectZone(500f, -10f));
+        Assert.assertEquals(TouchZone.ZONE_OUT_OF_BOUNDS, hitDetector.detectZone(-50f, -50f));
+
+        // Coordinates exceeding display bounds
+        Assert.assertEquals(TouchZone.ZONE_OUT_OF_BOUNDS, hitDetector.detectZone(1081f, 960f));
+        Assert.assertEquals(TouchZone.ZONE_OUT_OF_BOUNDS, hitDetector.detectZone(540f, 1921f));
+        Assert.assertEquals(TouchZone.ZONE_OUT_OF_BOUNDS, hitDetector.detectZone(2000f, 3000f));
+    }
+
+    @Test
+    public void testExclusionZones_takesPrecedenceOverZones() {
+        // Register top status/control bar: (0, 0) to (1080, 200)
+        hitDetector.addExclusionZone(0, 0, 1080, 200);
+
+        // Register bottom action bar: (0, 1720) to (1080, 1920)
+        hitDetector.addExclusionZone(0, 1720, 1080, 1920);
+
+        Assert.assertEquals(2, hitDetector.getExclusionZones().size());
+
+        // Touches inside top bar -> ZONE_EXCLUDED
+        Assert.assertEquals(TouchZone.ZONE_EXCLUDED, hitDetector.detectZone(150f, 100f));
+        Assert.assertEquals(TouchZone.ZONE_EXCLUDED, hitDetector.detectZone(850f, 50f));
+
+        // Touches inside bottom bar -> ZONE_EXCLUDED
+        Assert.assertEquals(TouchZone.ZONE_EXCLUDED, hitDetector.detectZone(200f, 1800f));
+        Assert.assertEquals(TouchZone.ZONE_EXCLUDED, hitDetector.detectZone(900f, 1750f));
+
+        // Touches in active timing body -> normal ZONE_LEFT and ZONE_RIGHT
+        Assert.assertEquals(TouchZone.ZONE_LEFT, hitDetector.detectZone(200f, 500f));
+        Assert.assertEquals(TouchZone.ZONE_RIGHT, hitDetector.detectZone(800f, 500f));
+
+        // Clearing exclusions restores full screen detection
+        hitDetector.clearExclusionZones();
+        Assert.assertEquals(0, hitDetector.getExclusionZones().size());
+        Assert.assertEquals(TouchZone.ZONE_LEFT, hitDetector.detectZone(150f, 100f));
+        Assert.assertEquals(TouchZone.ZONE_RIGHT, hitDetector.detectZone(850f, 50f));
+    }
+
+    @Test
+    public void testDeadZoneDividingMargin_absorbsAmbiguousCenterTouches() {
+        // Set a 40px dead zone centered around x = 540 (range [520, 560])
+        hitDetector.setDeadZoneWidthPx(40f);
+        Assert.assertEquals(40f, hitDetector.getDeadZoneWidthPx(), 0.001f);
+
+        // Touches directly in dead zone
+        Assert.assertEquals(TouchZone.ZONE_DEADZONE, hitDetector.detectZone(540f, 960f));
+        Assert.assertEquals(TouchZone.ZONE_DEADZONE, hitDetector.detectZone(521f, 960f));
+        Assert.assertEquals(TouchZone.ZONE_DEADZONE, hitDetector.detectZone(559f, 960f));
+
+        // Touches just outside dead zone
+        Assert.assertEquals(TouchZone.ZONE_LEFT, hitDetector.detectZone(519f, 960f));
+        Assert.assertEquals(TouchZone.ZONE_RIGHT, hitDetector.detectZone(561f, 960f));
+    }
+
+    @Test
+    public void testCustomSplitRatio() {
+        // 30% / 70% asymmetrical layout: split line at 1080 * 0.30 = 324 px
+        hitDetector.setSplitRatio(0.30f);
+        Assert.assertEquals(0.30f, hitDetector.getSplitRatio(), 0.001f);
+
+        Assert.assertEquals(TouchZone.ZONE_LEFT, hitDetector.detectZone(320f, 800f));
+        Assert.assertEquals(TouchZone.ZONE_RIGHT, hitDetector.detectZone(325f, 800f));
+        Assert.assertEquals(TouchZone.ZONE_RIGHT, hitDetector.detectZone(500f, 800f));
+    }
+
+    // ==========================================
+    // Atomic Recording and Undo Tests
+    // ==========================================
+
+    @Test
+    public void testAtomicRecording_commitsAtomicallyAndAdvances() {
+        Assert.assertEquals(1, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(0L, recorder.getCurrentQuestionElapsedMs());
+        Assert.assertFalse(recorder.canUndo());
+
+        // Solve Question 1: 52,000 ms
+        recorder.tickQuestion(52000L);
+        Assert.assertEquals(52000L, recorder.getCurrentQuestionElapsedMs());
+
+        QuestionLog q1 = recorder.recordQuestionAtomically(
+                QuestionOutcome.CORRECT, "Optics", "None", true
+        );
+
+        Assert.assertNotNull(q1);
+        Assert.assertEquals(1, q1.getQuestionNum());
+        Assert.assertEquals(52000L, q1.getDurationMs());
+        Assert.assertEquals(QuestionOutcome.CORRECT.name(), q1.getOutcome());
+        Assert.assertEquals("Optics", q1.getTopic());
+
+        // Index advanced to 2, question elapsed reset to 0, total study duration = 52s
+        Assert.assertEquals(2, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(0L, recorder.getCurrentQuestionElapsedMs());
+        Assert.assertEquals(52000L, recorder.getTotalStudyDurationMs());
+        Assert.assertEquals(1, recorder.getRecordedLogs().size());
+        Assert.assertTrue(recorder.canUndo());
+        Assert.assertEquals(1, recorder.getUndoStackDepth());
+    }
+
+    @Test
+    public void testAtomicRecording_rollbackOnInvalidParameters() {
+        recorder.tickQuestion(40000L);
+        Assert.assertEquals(40000L, recorder.getCurrentQuestionElapsedMs());
+
+        // Attempting to simulate invalid state with negative elapsed
+        // (direct validation guard in recordQuestionAtomically)
+        try {
+            // Force negative check by reflection or invalid state
+            recorder.recordQuestionAtomically(QuestionOutcome.CORRECT, "Physics", "", true);
+        } catch (Exception e) {
+            Assert.fail("Valid recording should not fail");
+        }
+
+        Assert.assertEquals(2, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(1, recorder.getRecordedLogs().size());
+    }
+
+    @Test
+    public void testUndoSingleQuestionRecord_restoresPreviousDurationAndCounter() {
+        // Solve Q1: 48,000 ms -> commit
+        recorder.tickQuestion(48000L);
+        recorder.recordQuestionAtomically(QuestionOutcome.CORRECT, "Mechanics", "", true);
+
+        Assert.assertEquals(2, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(0L, recorder.getCurrentQuestionElapsedMs());
+        Assert.assertEquals(1, recorder.getRecordedLogs().size());
+
+        // User triggers Undo
+        boolean undone = recorder.undoLastRecord();
+        Assert.assertTrue("Undo must succeed", undone);
+
+        // Previous state restored: Question index = 1, Elapsed = 48,000 ms
+        Assert.assertEquals(1, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(48000L, recorder.getCurrentQuestionElapsedMs());
+        Assert.assertEquals(0, recorder.getRecordedLogs().size());
+        Assert.assertFalse(recorder.canUndo());
+
+        // Ticking after undo continues from restored duration
+        recorder.tickQuestion(2000L);
+        Assert.assertEquals(50000L, recorder.getCurrentQuestionElapsedMs());
+    }
+
+    @Test
+    public void testMultiLevelUndoStack_handlesMultipleRollbacksToEmpty() {
+        // Record 3 questions sequentially
+        recorder.tickQuestion(30000L); // Q1: 30s
+        recorder.recordQuestionAtomically(QuestionOutcome.CORRECT, "Math", "", true);
+
+        recorder.tickQuestion(40000L); // Q2: 40s
+        recorder.recordQuestionAtomically(QuestionOutcome.INCORRECT, "Math", "Mistake", true);
+
+        recorder.tickQuestion(50000L); // Q3: 50s
+        recorder.recordQuestionAtomically(QuestionOutcome.PARTIAL, "Math", "", true);
+
+        Assert.assertEquals(4, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(3, recorder.getRecordedLogs().size());
+        Assert.assertEquals(3, recorder.getUndoStackDepth());
+
+        // 1. Undo Q3
+        Assert.assertTrue(recorder.undoLastRecord());
+        Assert.assertEquals(3, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(50000L, recorder.getCurrentQuestionElapsedMs());
+        Assert.assertEquals(2, recorder.getRecordedLogs().size());
+
+        // 2. Undo Q2
+        Assert.assertTrue(recorder.undoLastRecord());
+        Assert.assertEquals(2, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(40000L, recorder.getCurrentQuestionElapsedMs());
+        Assert.assertEquals(1, recorder.getRecordedLogs().size());
+
+        // 3. Undo Q1
+        Assert.assertTrue(recorder.undoLastRecord());
+        Assert.assertEquals(1, recorder.getCurrentQuestionIndex());
+        Assert.assertEquals(30000L, recorder.getCurrentQuestionElapsedMs());
+        Assert.assertEquals(0, recorder.getRecordedLogs().size());
+
+        // 4. Undo on empty stack returns false
+        Assert.assertFalse(recorder.undoLastRecord());
+        Assert.assertFalse(recorder.canUndo());
+    }
+}

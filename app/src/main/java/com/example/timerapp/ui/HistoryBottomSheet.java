@@ -73,7 +73,7 @@ public class HistoryBottomSheet extends Dialog {
     private final SharedPreferences prefs;
 
     // Tabs
-    private TextView btnTabCurrent, btnTabHistory, btnTabAnalytics;
+    private TextView btnTabCurrent, btnTabHistory, btnTabAnalytics, btnTabMistakes;
     private View layoutTabCurrent, layoutTabHistory, layoutTabAnalytics;
     private Tab activeTab = Tab.CURRENT;
 
@@ -125,6 +125,8 @@ public class HistoryBottomSheet extends Dialog {
     private TextView btnProfileJeeMain, btnProfileJeeAdv;
     private TextView tvJeeProfileTitle, tvJeeEstimatedScore, tvJeeAccuracy;
     private TextView tvJeePhysicsBreakdown, tvJeeChemistryBreakdown, tvJeeMathBreakdown;
+    private TextView tvJeeMarksGain, tvJeeNegativePenalty, tvJeeSillyMistakePotential;
+    private Button btnOpenMistakeNotebook;
     private LinearLayout containerOverTargetQuestions;
     private boolean isJeeMainProfile = true;
 
@@ -175,6 +177,7 @@ public class HistoryBottomSheet extends Dialog {
         btnTabCurrent = view.findViewById(R.id.btnTabCurrent);
         btnTabHistory = view.findViewById(R.id.btnTabHistory);
         btnTabAnalytics = view.findViewById(R.id.btnTabAnalytics);
+        btnTabMistakes = view.findViewById(R.id.btnTabMistakes);
 
         // Mock Test Banner Launcher
         btnLaunchMockTest = view.findViewById(R.id.btnLaunchMockTest);
@@ -278,6 +281,13 @@ public class HistoryBottomSheet extends Dialog {
         tvJeePhysicsBreakdown = view.findViewById(R.id.tvJeePhysicsBreakdown);
         tvJeeChemistryBreakdown = view.findViewById(R.id.tvJeeChemistryBreakdown);
         tvJeeMathBreakdown = view.findViewById(R.id.tvJeeMathBreakdown);
+        tvJeeMarksGain = view.findViewById(R.id.tvJeeMarksGain);
+        tvJeeNegativePenalty = view.findViewById(R.id.tvJeeNegativePenalty);
+        tvJeeSillyMistakePotential = view.findViewById(R.id.tvJeeSillyMistakePotential);
+        btnOpenMistakeNotebook = view.findViewById(R.id.btnOpenMistakeNotebook);
+        if (btnOpenMistakeNotebook != null) {
+            btnOpenMistakeNotebook.setOnClickListener(v -> openMistakeReviewDialog());
+        }
         containerOverTargetQuestions = view.findViewById(R.id.containerOverTargetQuestions);
 
         if (btnProfileJeeMain != null) {
@@ -296,10 +306,18 @@ public class HistoryBottomSheet extends Dialog {
         containerStudyCoachCards = view.findViewById(R.id.containerStudyCoachCards);
     }
 
+    private void openMistakeReviewDialog() {
+        MistakeReviewDialog dialog = new MistakeReviewDialog(getContext(), allSessions, null, this::updateJeeProfileAnalytics);
+        dialog.show();
+    }
+
     private void setupTabs() {
         btnTabCurrent.setOnClickListener(v -> switchTab(Tab.CURRENT));
         btnTabHistory.setOnClickListener(v -> switchTab(Tab.HISTORY));
         btnTabAnalytics.setOnClickListener(v -> switchTab(Tab.ANALYTICS));
+        if (btnTabMistakes != null) {
+            btnTabMistakes.setOnClickListener(v -> openMistakeReviewDialog());
+        }
     }
 
     private void switchTab(Tab tab) {
@@ -1014,6 +1032,7 @@ public class HistoryBottomSheet extends Dialog {
         int correctCount = 0;
         int incorrectCount = 0;
         int skippedCount = 0;
+        int sillyMistakesCount = 0;
 
         long physicsDur = 0, chemistryDur = 0, mathDur = 0;
         int physicsQ = 0, chemistryQ = 0, mathQ = 0;
@@ -1025,6 +1044,11 @@ public class HistoryBottomSheet extends Dialog {
             for (QuestionLog log : s.getLogs()) {
                 totalAttempted++;
                 String outcome = log.getOutcome() != null ? log.getOutcome().toUpperCase(Locale.ROOT) : "SOLVED";
+                String mistakeTag = (log.getMistakeTag() != null) ? log.getMistakeTag().toUpperCase(Locale.ROOT) : "";
+                if (mistakeTag.contains("SILLY")) {
+                    sillyMistakesCount++;
+                }
+
                 if ("SOLVED".equals(outcome) || "CORRECT".equals(outcome)) {
                     correctCount++;
                 } else if ("INCORRECT".equals(outcome)) {
@@ -1053,12 +1077,24 @@ public class HistoryBottomSheet extends Dialog {
             }
         }
 
-        double projectedScore = isJeeMainProfile
-                ? ((correctCount * 4.0) - (incorrectCount * 1.0))
-                : ((correctCount * 4.0) - (incorrectCount * 2.0));
+        double penaltyPerIncorrect = isJeeMainProfile ? 1.0 : 2.0;
+        double correctGain = correctCount * 4.0;
+        double negativePenalty = incorrectCount * penaltyPerIncorrect;
+        double projectedScore = correctGain - negativePenalty;
+        double sillyPotential = sillyMistakesCount * (4.0 + penaltyPerIncorrect);
 
         if (tvJeeEstimatedScore != null) {
             tvJeeEstimatedScore.setText(String.format(Locale.ROOT, "%.0f Pts (Net)", projectedScore));
+        }
+
+        if (tvJeeMarksGain != null) {
+            tvJeeMarksGain.setText(String.format(Locale.ROOT, "• Correct Answers (+4): +%.0f pts (%d questions)", correctGain, correctCount));
+        }
+        if (tvJeeNegativePenalty != null) {
+            tvJeeNegativePenalty.setText(String.format(Locale.ROOT, "• Negative Penalty (-%d): -%.0f pts (%d incorrect)", (int) penaltyPerIncorrect, negativePenalty, incorrectCount));
+        }
+        if (tvJeeSillyMistakePotential != null) {
+            tvJeeSillyMistakePotential.setText(String.format(Locale.ROOT, "• Recoverable from Silly Mistakes: +%.0f pts (%d mistakes)", sillyPotential, sillyMistakesCount));
         }
 
         if (tvJeeAccuracy != null) {

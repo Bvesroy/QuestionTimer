@@ -15,22 +15,27 @@ public class TimerDatabaseManagerTest {
     @Test
     public void testDatabaseContractDefinitions() {
         Assert.assertEquals("question_timer.db", DatabaseContract.DATABASE_NAME);
-        Assert.assertEquals(DatabaseContract.DATABASE_VERSION, DatabaseContract.DATABASE_VERSION);
-        Assert.assertTrue(DatabaseContract.DATABASE_VERSION >= 3);
+        Assert.assertEquals(4, DatabaseContract.DATABASE_VERSION);
 
         Assert.assertEquals("sessions", DatabaseContract.SessionEntry.TABLE_NAME);
         Assert.assertEquals("question_logs", DatabaseContract.QuestionLogEntry.TABLE_NAME);
         Assert.assertEquals("subjects", DatabaseContract.SubjectEntry.TABLE_NAME);
         Assert.assertEquals("exam_countdowns", DatabaseContract.ExamCountdownEntry.TABLE_NAME);
         Assert.assertEquals("achievements", DatabaseContract.AchievementEntry.TABLE_NAME);
+        Assert.assertEquals("settings", DatabaseContract.SettingEntry.TABLE_NAME);
+        Assert.assertEquals("attempt_audit_history", DatabaseContract.AttemptAuditEntry.TABLE_NAME);
 
         // Verify foreign key constraint clause in SQL
         Assert.assertTrue(DatabaseContract.QuestionLogEntry.SQL_CREATE_TABLE.contains("FOREIGN KEY"));
         Assert.assertTrue(DatabaseContract.QuestionLogEntry.SQL_CREATE_TABLE.contains("ON DELETE CASCADE"));
+        Assert.assertTrue(DatabaseContract.AttemptAuditEntry.SQL_CREATE_TABLE.contains("FOREIGN KEY"));
+        Assert.assertTrue(DatabaseContract.AttemptAuditEntry.SQL_CREATE_TABLE.contains("ON DELETE CASCADE"));
 
         // Verify indexes
         Assert.assertTrue(DatabaseContract.SessionEntry.SQL_CREATE_IDX_IS_ACTIVE.contains("idx_sessions_is_active"));
         Assert.assertTrue(DatabaseContract.QuestionLogEntry.SQL_CREATE_IDX_SESSION_ID.contains("idx_question_logs_session_id"));
+        Assert.assertTrue(DatabaseContract.SettingEntry.SQL_CREATE_IDX_KEY.contains("idx_settings_key"));
+        Assert.assertTrue(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_QUESTION_LOG_ID.contains("idx_audit_question_log_id"));
     }
 
     @Test

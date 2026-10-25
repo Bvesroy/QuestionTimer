@@ -44,6 +44,8 @@ import com.example.timerapp.data.backup.SafBackupEngine;
 import com.example.timerapp.model.QuestionLog;
 import com.example.timerapp.model.TimerSession;
 import com.example.timerapp.model.TimerState;
+import com.example.timerapp.receiver.DailyWallpaperRefreshReceiver;
+import com.example.timerapp.widget.WidgetUpdateHelper;
 
 import org.json.JSONObject;
 
@@ -88,6 +90,18 @@ public class MainActivity extends Activity {
     private ImageButton btnHistory;
     private ImageButton btnSettings;
 
+    // Two-Zone Answer Recording & Undo Views
+    private View layoutUndoBanner;
+    private TextView tvUndoMessage;
+    private Button btnUndoAnswer;
+    private boolean isTwoZoneRecordingEnabled = false;
+    private final Handler undoBannerHandler = new Handler(Looper.getMainLooper());
+    private QuestionLog lastRecordedOutcomeLog = null;
+
+    // Explicit Session State Machine concurrency guard
+    private final Object stateLock = new Object();
+    private long lastTapRealtime = 0L;
+
     // Total Study Clock & Break Management
     private long sessionStudyStartRealtime = 0L;
     private long accumulatedStudyDurationMs = 0L;
@@ -115,12 +129,18 @@ public class MainActivity extends Activity {
     private long startTimeRealtime = 0L;
     private long accumulatedElapsedMs = 0L;
     private final Handler timerHandler = new Handler(Looper.getMainLooper());
+    private int widgetUpdateTickCounter = 0;
     private final Runnable timerTicker = new Runnable() {
         @Override
         public void run() {
-            if (currentState == TimerState.RUNNING) {
+            if (currentState.isRunning()) {
                 updateTimerDisplay();
                 checkIdleAndBreakReminders();
+                widgetUpdateTickCounter++;
+                if (widgetUpdateTickCounter >= 25) { // update widgets approx every second
+                    widgetUpdateTickCounter = 0;
+                    updateWidgets();
+                }
                 timerHandler.postDelayed(this, 40); // ~25 FPS update for smooth tenths of a second
             }
         }
@@ -152,9 +172,10 @@ public class MainActivity extends Activity {
 
         sessionStorage = new SessionStorage(this);
 
-        // Load saved timer size preference
+        // Load saved timer size preference & Two-Zone Answer setting
         SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
         currentTimerSizeMode = prefs.getString(SettingsDialog.KEY_TIMER_SIZE_MODE, SettingsDialog.SIZE_MEDIUM);
+        isTwoZoneRecordingEnabled = prefs.getBoolean(SettingsDialog.KEY_TWO_ZONE_RECORDING, false);
 
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         lastInteractionRealtime = SystemClock.elapsedRealtime();
@@ -167,6 +188,24 @@ public class MainActivity extends Activity {
         updateExamBanner();
         applyTimerSize();
         renderUi();
+        handleWidgetActions(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleWidgetActions(intent);
+    }
+
+    private void handleWidgetActions(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getAction();
+        if (com.example.timerapp.widget.WidgetUpdateHelper.ACTION_WIDGET_TOGGLE.equals(action)) {
+            handleManualToggle();
+        } else if (com.example.timerapp.widget.WidgetUpdateHelper.ACTION_WIDGET_BREAK.equals(action)) {
+            handleStudyClockClick();
+        }
     }
 
     @Override
@@ -242,6 +281,14 @@ public class MainActivity extends Activity {
         btnToggle.setOnClickListener(v -> handleManualToggle());
         btnHistory.setOnClickListener(v -> showHistoryBottomSheet());
         btnSettings.setOnClickListener(v -> showSettingsDialog());
+
+        // Transient Undo Notification Banner
+        layoutUndoBanner = findViewById(R.id.layoutUndoBanner);
+        tvUndoMessage = findViewById(R.id.tvUndoMessage);
+        btnUndoAnswer = findViewById(R.id.btnUndoAnswer);
+        if (btnUndoAnswer != null) {
+            btnUndoAnswer.setOnClickListener(v -> undoLastAnswerOutcome());
+        }
     }
 
     /**
@@ -272,15 +319,36 @@ public class MainActivity extends Activity {
      * Configures the full-screen tap-anywhere gesture loop while ignoring touches on interactive controls.
      * When RUNNING, the entire screen acts as an instant pause & record tap target.
      */
+    /**
+     * Configures full-screen tap gesture loop with Two-Zone Answer Recording support.
+     * When Two-Zone Answer Recording is active:
+     * - Screen is split into two equal horizontal zones (integer pixel height / 2).
+     * - Upper zone = INCORRECT, Lower zone = SOLVED (identical AMOLED background, no dividing lines).
+     * - Deliberate taps immediately record authoritative duration, save outcome, and advance to next question
+     *   without resetting continuous Total Study Clock.
+     * - Shows transient Undo notification.
+     * - Prevents unintended answers on controls, rotation, pause, break, or reset.
+     */
     private void setupGestureDetector() {
         rootContainer.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_UP) {
-                // If not running and controls are visible, ignore taps on interactive bars
-                if (currentState != TimerState.RUNNING) {
-                    if (isTouchInsideView(topBarContainer, event) || isTouchInsideView(bottomControlsContainer, event)) {
-                        return false;
-                    }
+                // Ignore touches on interactive top/bottom bars or undo banner
+                if (isTouchInsideView(topBarContainer, event) ||
+                    isTouchInsideView(bottomControlsContainer, event) ||
+                    isTouchInsideView(layoutUndoBanner, event)) {
+                    return false;
                 }
+
+                // Two-Zone Answer Recording when timer is actively running
+                if (isTwoZoneRecordingEnabled && currentState.isRunning()) {
+                    int height = rootContainer.getHeight();
+                    int midY = height / 2;
+                    float tapY = event.getY();
+                    String outcome = (tapY < midY) ? "INCORRECT" : "SOLVED";
+                    recordTwoZoneOutcome(outcome);
+                    return true;
+                }
+
                 onScreenTapped();
                 return true;
             }
@@ -299,31 +367,163 @@ public class MainActivity extends Activity {
     }
 
     /**
+     * Thread-safe, atomic, and idempotent state machine transition preventing rapid double taps.
+     */
+    private boolean transitionTo(TimerState newState) {
+        synchronized (stateLock) {
+            long now = SystemClock.elapsedRealtime();
+            if (now - lastTapRealtime < 180 && (newState == currentState || newState == TimerState.RECORDING_OUTCOME)) {
+                return false;
+            }
+            lastTapRealtime = now;
+            currentState = newState;
+            return true;
+        }
+    }
+
+    /**
      * Tap anywhere gesture loop:
      * - IDLE / READY -> Tap starts timer
      * - RUNNING -> Tap pauses timer, records current question duration
      * - PAUSED -> Tap resets and immediately starts timer for next question (e.g. Q1 -> Q2)
      */
     private void onScreenTapped() {
-        lastInteractionRealtime = SystemClock.elapsedRealtime();
+        long now = SystemClock.elapsedRealtime();
+        if (now - lastTapRealtime < 180) {
+            return;
+        }
+        lastInteractionRealtime = now;
         hasShownIdleToast = false;
         triggerTapFeedback();
 
-        switch (currentState) {
-            case IDLE:
-                startTimer();
-                break;
-            case RUNNING:
-                pauseAndRecordQuestion();
-                break;
-            case PAUSED:
-                advanceAndStartNextQuestion();
-                break;
+        if (currentState == TimerState.IDLE) {
+            startTimer();
+        } else if (currentState.isRunning()) {
+            pauseAndRecordQuestion();
+        } else if (currentState.isPaused()) {
+            advanceAndStartNextQuestion();
+        } else if (currentState == TimerState.SESSION_ENDED) {
+            createNewSession();
         }
     }
 
+    /**
+     * Two-Zone Answer Recording:
+     * Authoritatively records duration, saves outcome (SOLVED or INCORRECT), advances question count,
+     * resets active question clock to 0, preserves Total Study Clock without reset, and shows transient Undo control.
+     */
+    private void recordTwoZoneOutcome(String outcome) {
+        if (!transitionTo(TimerState.RECORDING_OUTCOME)) {
+            return;
+        }
+
+        long authoritativeDuration = (startTimeRealtime > 0)
+                ? (SystemClock.elapsedRealtime() - startTimeRealtime)
+                : accumulatedElapsedMs;
+
+        triggerTwoZoneHaptic(outcome);
+
+        int currentQNum = (currentSession != null) ? currentSession.getCurrentQuestion() : 1;
+        long sessId = (currentSession != null) ? currentSession.getId() : 1L;
+        QuestionLog log = new QuestionLog(
+                System.currentTimeMillis(),
+                sessId,
+                currentQNum,
+                authoritativeDuration,
+                System.currentTimeMillis(),
+                "", "", "MEDIUM", outcome, 3,
+                "INCORRECT".equals(outcome) ? "MISTAKE" : "", ""
+        );
+
+        if (currentSession != null) {
+            currentSession.addLog(log);
+            persistSessions();
+        }
+
+        showUndoAnswerBanner(log);
+
+        // Atomic advance: zero question clock and continue running
+        transitionTo(TimerState.ADVANCING_QUESTION);
+        accumulatedElapsedMs = 0L;
+        startTimeRealtime = SystemClock.elapsedRealtime();
+        continuousRunningStartTime = SystemClock.elapsedRealtime();
+        lastInteractionRealtime = SystemClock.elapsedRealtime();
+
+        transitionTo(TimerState.RUNNING_QUESTION);
+
+        updateWidgets();
+        renderUi();
+
+        // Target check
+        if (currentSession != null) {
+            int target = currentSession.getTarget();
+            if (target > 0 && currentSession.getCompletedCount() >= target) {
+                Toast.makeText(this, "🎯 TARGET REACHED! (" + target + " questions completed)", Toast.LENGTH_LONG).show();
+                checkAutoApplyWallpaper();
+                promptSessionNotesIfNeeded(currentSession);
+            }
+        }
+    }
+
+    private void showUndoAnswerBanner(QuestionLog log) {
+        lastRecordedOutcomeLog = log;
+        if (layoutUndoBanner == null || tvUndoMessage == null) return;
+
+        undoBannerHandler.removeCallbacksAndMessages(null);
+        tvUndoMessage.setText(String.format(Locale.ROOT, "Q#%d recorded: %s (%s)",
+                log.getQuestionNumber(), log.getOutcome(), log.getFormattedDuration()));
+        layoutUndoBanner.setVisibility(View.VISIBLE);
+        layoutUndoBanner.setAlpha(1.0f);
+
+        // Transient auto-dismiss in 4.5 seconds
+        undoBannerHandler.postDelayed(() -> {
+            if (layoutUndoBanner != null) {
+                layoutUndoBanner.animate()
+                        .alpha(0.0f)
+                        .setDuration(250)
+                        .withEndAction(() -> layoutUndoBanner.setVisibility(View.GONE))
+                        .start();
+            }
+        }, 4500);
+    }
+
+    private void undoLastAnswerOutcome() {
+        triggerTapFeedback();
+        if (currentSession == null || currentSession.getLogs().isEmpty()) return;
+
+        QuestionLog removed = currentSession.removeLastLog();
+        persistSessions();
+
+        if (layoutUndoBanner != null) {
+            layoutUndoBanner.setVisibility(View.GONE);
+        }
+
+        if (removed != null) {
+            Toast.makeText(this, "Undid Question #" + removed.getQuestionNumber() + " (" + removed.getOutcome() + ")", Toast.LENGTH_SHORT).show();
+        }
+        renderUi();
+        updateWidgets();
+    }
+
+    private void triggerTwoZoneHaptic(String outcome) {
+        SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+        if (!prefs.getBoolean(SettingsDialog.KEY_HAPTIC_ENABLED, true)) return;
+        if (vibrator == null) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if ("INCORRECT".equals(outcome)) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 20, 35, 20}, -1));
+                } else {
+                    vibrator.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE));
+                }
+            } else {
+                vibrator.vibrate(25);
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void startTimer() {
-        currentState = TimerState.RUNNING;
+        transitionTo(TimerState.RUNNING_QUESTION);
         lastInteractionRealtime = SystemClock.elapsedRealtime();
         continuousRunningStartTime = SystemClock.elapsedRealtime();
         if (sessionStudyStartRealtime == 0L && !isBreakActive) {
@@ -333,11 +533,12 @@ public class MainActivity extends Activity {
         hasShownBreakToast = false;
         startTimeRealtime = SystemClock.elapsedRealtime() - accumulatedElapsedMs;
         timerHandler.post(timerTicker);
+        updateWidgets();
         renderUi();
     }
 
     private void pauseAndRecordQuestion() {
-        currentState = TimerState.PAUSED;
+        transitionTo(TimerState.PAUSED);
         continuousRunningStartTime = 0L;
         timerHandler.removeCallbacks(timerTicker);
 
@@ -356,12 +557,14 @@ public class MainActivity extends Activity {
         currentSession.addLog(log);
         persistSessions();
 
+        updateWidgets();
         renderUi();
 
         // Check if target questions goal is reached
         int target = currentSession.getTarget();
         if (target > 0 && currentSession.getCompletedCount() >= target) {
             Toast.makeText(this, "🎯 TARGET REACHED! (" + target + " questions completed)", Toast.LENGTH_LONG).show();
+            checkAutoApplyWallpaper();
             promptSessionNotesIfNeeded(currentSession);
         }
     }
@@ -369,7 +572,7 @@ public class MainActivity extends Activity {
     private void advanceAndStartNextQuestion() {
         // Reset timer duration to 0 and immediately start for next question
         accumulatedElapsedMs = 0L;
-        currentState = TimerState.RUNNING;
+        transitionTo(TimerState.RUNNING_QUESTION);
         lastInteractionRealtime = SystemClock.elapsedRealtime();
         continuousRunningStartTime = SystemClock.elapsedRealtime();
         if (sessionStudyStartRealtime == 0L && !isBreakActive) {
@@ -379,6 +582,7 @@ public class MainActivity extends Activity {
         hasShownBreakToast = false;
         startTimeRealtime = SystemClock.elapsedRealtime();
         timerHandler.post(timerTicker);
+        updateWidgets();
         renderUi();
     }
 
@@ -507,6 +711,18 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "Tags saved for Question #" + updatedLog.getQuestionNumber(), Toast.LENGTH_SHORT).show();
         });
         dialog.show();
+    }
+
+    private void openWallpaperPreviewDialog() {
+        int streak = (sessionStorage != null) ? sessionStorage.calculateCurrentStreak() : 1;
+        long targetMillis = (sessionStorage != null && !sessionStorage.getAllExamCountdowns().isEmpty())
+                ? sessionStorage.getAllExamCountdowns().get(0).getTargetDateMillis()
+                : com.example.timerapp.wallpaper.JeeWallpaperGenerator.DEFAULT_JEE_2027_MILLIS;
+        new WallpaperPreviewDialog(this, allSessions, targetMillis, streak).show();
+    }
+
+    private void openMistakeReviewDialog() {
+        new MistakeReviewDialog(this, allSessions, sessionStorage, this::renderUi).show();
     }
 
     private void handleDiscardCurrentQuestion() {
@@ -694,7 +910,12 @@ public class MainActivity extends Activity {
                 btnToggle.setColorFilter(primaryColor);
                 break;
             case RUNNING:
-                tvStateBadge.setText(R.string.badge_running);
+            case RUNNING_QUESTION:
+                if (isTwoZoneRecordingEnabled) {
+                    tvStateBadge.setText("TWO-ZONE: UPPER=WRONG • LOWER=SOLVED");
+                } else {
+                    tvStateBadge.setText(R.string.badge_running);
+                }
                 tvStateBadge.setBackgroundResource(R.drawable.bg_pill_accent);
                 tvStateBadge.setTextColor(accentColor);
                 btnToggle.setImageResource(R.drawable.ic_pause);
@@ -707,10 +928,26 @@ public class MainActivity extends Activity {
                 btnToggle.setImageResource(R.drawable.ic_play);
                 btnToggle.setColorFilter(Color.parseColor("#FF9F0A"));
                 break;
+            case EXPLICIT_BREAK:
+                tvStateBadge.setText("ON BREAK • TAP TO RESUME");
+                tvStateBadge.setBackgroundResource(R.drawable.bg_pill_orange);
+                tvStateBadge.setTextColor(Color.parseColor("#FF9F0A"));
+                btnToggle.setImageResource(R.drawable.ic_play);
+                btnToggle.setColorFilter(Color.parseColor("#FF9F0A"));
+                break;
+            case SESSION_ENDED:
+                tvStateBadge.setText("SESSION ENDED");
+                tvStateBadge.setBackgroundResource(R.drawable.bg_pill);
+                tvStateBadge.setTextColor(secondaryColor);
+                btnToggle.setImageResource(R.drawable.ic_play);
+                btnToggle.setColorFilter(secondaryColor);
+                break;
+            default:
+                break;
         }
 
         // Manage auto-hiding controls based on state
-        updateControlsVisibility(currentState != TimerState.RUNNING, true);
+        updateControlsVisibility(!currentState.isRunning(), true);
 
         updateTimerDisplay();
     }
@@ -782,6 +1019,22 @@ public class MainActivity extends Activity {
             public void onFocusControlsChanged() {
                 updateExamBanner();
                 renderUi();
+            }
+
+            @Override
+            public void onTwoZoneRecordingChanged(boolean enabled) {
+                isTwoZoneRecordingEnabled = enabled;
+                renderUi();
+            }
+
+            @Override
+            public void onOpenWallpaperPreview() {
+                openWallpaperPreviewDialog();
+            }
+
+            @Override
+            public void onOpenMistakeReview() {
+                openMistakeReviewDialog();
             }
 
             @Override
@@ -1366,6 +1619,51 @@ public class MainActivity extends Activity {
             renderUi();
         });
         dialog.show();
+    }
+
+    private void updateWidgets() {
+        try {
+            long currentElapsed = (startTimeRealtime > 0)
+                    ? (SystemClock.elapsedRealtime() - startTimeRealtime)
+                    : accumulatedElapsedMs;
+            long studyMs = accumulatedStudyDurationMs;
+            if (sessionStudyStartRealtime > 0 && !isBreakActive) {
+                studyMs += (SystemClock.elapsedRealtime() - sessionStudyStartRealtime);
+            }
+            int completedCount = 0;
+            int correctCount = 0;
+            if (currentSession != null) {
+                List<QuestionLog> logs = currentSession.getLogs();
+                if (logs != null) {
+                    completedCount = logs.size();
+                    for (QuestionLog log : logs) {
+                        if ("CORRECT".equalsIgnoreCase(log.getOutcome())) {
+                            correctCount++;
+                        }
+                    }
+                }
+            }
+            int accuracyPct = completedCount > 0 ? (int) Math.round((correctCount * 100.0) / completedCount) : 0;
+            int streakDays = 1;
+            WidgetUpdateHelper.updateAllWidgets(
+                    this,
+                    currentState,
+                    currentElapsed,
+                    studyMs,
+                    isBreakActive,
+                    completedCount,
+                    accuracyPct,
+                    streakDays
+            );
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void checkAutoApplyWallpaper() {
+        try {
+            DailyWallpaperRefreshReceiver.performDailyRefresh(this);
+        } catch (Throwable ignored) {
+        }
     }
 
     @Override

@@ -11,6 +11,8 @@
     <!-- Keep screen awake during question solving sessions -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -32,6 +34,73 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 1. Compact Live Timer Home-Screen Widget -->
+        <receiver
+            android:name=".widget.LiveTimerWidgetProvider"
+            android:exported="true"
+            android:label="Live Question Timer">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_live_timer" />
+        </receiver>
+
+        <!-- 2. Quick-Control Home-Screen Widget -->
+        <receiver
+            android:name=".widget.QuickControlWidgetProvider"
+            android:exported="true"
+            android:label="Timer Quick Controls">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.timerapp.ACTION_WIDGET_TOGGLE" />
+                <action android:name="com.example.timerapp.ACTION_WIDGET_BREAK" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_quick_control" />
+        </receiver>
+
+        <!-- 3. Exam Countdown Home-Screen Widget -->
+        <receiver
+            android:name=".widget.ExamCountdownWidgetProvider"
+            android:exported="true"
+            android:label="JEE 2027 Countdown">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_exam_countdown" />
+        </receiver>
+
+        <!-- 4. Progress & Consistency Home-Screen Widget -->
+        <receiver
+            android:name=".widget.ProgressWidgetProvider"
+            android:exported="true"
+            android:label="Study Progress">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_progress" />
+        </receiver>
+
+        <!-- 5. AlarmManager Receiver for Daily Wallpaper & Countdown Refresh -->
+        <receiver
+            android:name=".receiver.DailyWallpaperRefreshReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.timerapp.ACTION_DAILY_WALLPAPER_REFRESH" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

@@ -91,6 +91,104 @@ public class SafBackupRestoreTest {
         Assert.assertEquals(1, payload.getJSONArray(SafBackupManager.KEY_ACHIEVEMENTS).length());
         Assert.assertEquals(1, payload.getJSONArray(SafBackupManager.KEY_PROFILES).length());
         Assert.assertEquals("AMOLED_BLACK", payload.getJSONObject(SafBackupManager.KEY_SETTINGS).getString("theme"));
+        Assert.assertEquals("2027-01-20", payload.getString(SafBackupManager.KEY_TARGET_DATE));
+    }
+
+    @Test
+    public void testV4ArchiveGeneration_includesAuditWallpaperWidgetTargetDate() throws JSONException {
+        JSONArray sessions = new JSONArray();
+        JSONObject s1 = new JSONObject();
+        s1.put("id", 200L);
+        s1.put("name", "JEE 2027 Mechanics");
+        sessions.put(s1);
+
+        JSONArray logs = new JSONArray();
+        JSONObject l1 = new JSONObject();
+        l1.put("id", 10L);
+        l1.put("question_num", 1);
+        l1.put("duration_ms", 95000L);
+        l1.put("outcome", "SOLVED");
+        logs.put(l1);
+
+        JSONArray auditHistory = new JSONArray();
+        JSONObject a1 = new JSONObject();
+        a1.put("question_log_id", 10L);
+        a1.put("session_id", 200L);
+        a1.put("original_outcome", "WRONG_ANSWER");
+        a1.put("corrected_outcome", "SOLVED");
+        a1.put("correction_timestamp", 1700000000000L);
+        auditHistory.put(a1);
+
+        JSONObject wallpaper = new JSONObject();
+        wallpaper.put("enabled", true);
+        wallpaper.put("uri", "content://media/wallpaper/1");
+        wallpaper.put("dim_alpha", 0.4);
+
+        JSONObject widget = new JSONObject();
+        widget.put("theme", "AMOLED");
+        widget.put("show_countdown", true);
+
+        JSONObject settings = new JSONObject();
+        settings.put("two_zone_enabled", true);
+
+        JSONObject archive = SafBackupManager.createFullArchive(
+                sessions, logs, null, null, null, null, null, settings,
+                auditHistory, wallpaper, "2027-01-20", widget
+        );
+
+        Assert.assertEquals(SafBackupManager.ARCHIVE_VERSION, archive.getInt(SafBackupManager.KEY_VERSION));
+        Assert.assertEquals(4, archive.getInt(SafBackupManager.KEY_VERSION));
+        Assert.assertEquals(64, archive.getString(SafBackupManager.KEY_CHECKSUM).length());
+
+        JSONObject payload = archive.getJSONObject("payload");
+        Assert.assertEquals(1, payload.getJSONArray(SafBackupManager.KEY_AUDIT_HISTORY).length());
+        Assert.assertEquals("2027-01-20", payload.getString(SafBackupManager.KEY_TARGET_DATE));
+        Assert.assertTrue(payload.getJSONObject(SafBackupManager.KEY_WALLPAPER_SETTINGS).getBoolean("enabled"));
+        Assert.assertEquals("AMOLED", payload.getJSONObject(SafBackupManager.KEY_WIDGET_SETTINGS).getString("theme"));
+
+        // Validate and extract archive succeeds with valid SHA-256
+        JSONObject extracted = SafBackupManager.validateAndExtractArchive(archive.toString());
+        Assert.assertNotNull(extracted);
+        Assert.assertEquals("2027-01-20", extracted.getString(SafBackupManager.KEY_TARGET_DATE));
+    }
+
+    @Test
+    public void testBackwardCompatibility_v1v2v3ArchivesAccepted() throws JSONException {
+        // V1 legacy archive (version = 1, sessions directly under root)
+        JSONObject v1Archive = new JSONObject();
+        v1Archive.put(SafBackupManager.KEY_APP, SafBackupManager.APP_IDENTIFIER);
+        v1Archive.put(SafBackupManager.KEY_VERSION, 1);
+        JSONArray v1Sessions = new JSONArray();
+        JSONObject v1Sess = new JSONObject();
+        v1Sess.put("name", "V1 Session");
+        v1Sessions.put(v1Sess);
+        v1Archive.put("sessions", v1Sessions);
+
+        JSONObject extractedV1 = SafBackupManager.validateAndExtractArchive(v1Archive.toString());
+        Assert.assertNotNull(extractedV1);
+        Assert.assertEquals(1, extractedV1.getInt(SafBackupManager.KEY_VERSION));
+
+        // V3 archive with payload and checksum
+        JSONArray v3Sessions = new JSONArray();
+        JSONObject v3Sess = new JSONObject();
+        v3Sess.put("name", "V3 Practice");
+        v3Sessions.put(v3Sess);
+        JSONObject v3Settings = new JSONObject();
+        v3Settings.put("target_pace_sec", 120);
+
+        JSONObject v3Payload = new JSONObject();
+        v3Payload.put(SafBackupManager.KEY_SESSIONS, v3Sessions);
+        v3Payload.put(SafBackupManager.KEY_SETTINGS, v3Settings);
+
+        JSONObject v3Archive = new JSONObject();
+        v3Archive.put(SafBackupManager.KEY_APP, SafBackupManager.APP_IDENTIFIER);
+        v3Archive.put(SafBackupManager.KEY_VERSION, 3);
+        v3Archive.put(SafBackupManager.KEY_CHECKSUM, SafBackupManager.computeSha256(v3Payload.toString()));
+        v3Archive.put("payload", v3Payload);
+
+        JSONObject extractedV3 = SafBackupManager.validateAndExtractArchive(v3Archive.toString());
+        Assert.assertNotNull(extractedV3);
+        Assert.assertEquals(1, extractedV3.getJSONArray(SafBackupManager.KEY_SESSIONS).length());
     }
 
     @Test

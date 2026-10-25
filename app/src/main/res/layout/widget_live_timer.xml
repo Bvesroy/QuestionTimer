@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetLiveTimerRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_dialog_card"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Status Badge -->
+    <TextView
+        android:id="@+id/tvWidgetStatusBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_pill"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.14"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:text="READY"
+        android:textColor="@color/accent_running"
+        android:textSize="9sp" />
+
+    <!-- Current Question Timer Readout -->
+    <TextView
+        android:id="@+id/tvWidgetTimerReadout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="monospace"
+        android:text="00:00.0"
+        android:textColor="@color/text_primary"
+        android:textSize="26sp"
+        android:textStyle="bold" />
+
+    <!-- Total Study Clock -->
+    <TextView
+        android:id="@+id/tvWidgetTotalStudyClock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.08"
+        android:text="TOTAL: 00:00:00"
+        android:textColor="@color/text_secondary"
+        android:textSize="10sp" />
+
+</LinearLayout>

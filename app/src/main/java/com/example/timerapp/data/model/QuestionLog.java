@@ -25,6 +25,10 @@ public class QuestionLog implements Serializable {
     private String mistakeTag;
     private String notes;
 
+    // Version 4 extended audit fields
+    private String originalOutcome;
+    private long correctionTimestamp;
+
     public QuestionLog() {
         this.label = "";
         this.topic = "";
@@ -33,6 +37,8 @@ public class QuestionLog implements Serializable {
         this.confidence = 3;
         this.mistakeTag = "";
         this.notes = "";
+        this.originalOutcome = "";
+        this.correctionTimestamp = 0L;
     }
 
     public QuestionLog(long id, long sessionId, int questionNum, long durationMs, long completedAt) {
@@ -42,6 +48,13 @@ public class QuestionLog implements Serializable {
     public QuestionLog(long id, long sessionId, int questionNum, long durationMs, long completedAt,
                        String label, String topic, String difficulty, String outcome,
                        int confidence, String mistakeTag, String notes) {
+        this(id, sessionId, questionNum, durationMs, completedAt, label, topic, difficulty, outcome, confidence, mistakeTag, notes, "", 0L);
+    }
+
+    public QuestionLog(long id, long sessionId, int questionNum, long durationMs, long completedAt,
+                       String label, String topic, String difficulty, String outcome,
+                       int confidence, String mistakeTag, String notes,
+                       String originalOutcome, long correctionTimestamp) {
         this.id = id;
         this.sessionId = sessionId;
         this.questionNum = questionNum;
@@ -54,6 +67,8 @@ public class QuestionLog implements Serializable {
         this.confidence = confidence;
         this.mistakeTag = (mistakeTag != null) ? mistakeTag : "";
         this.notes = (notes != null) ? notes : "";
+        this.originalOutcome = (originalOutcome != null) ? originalOutcome : "";
+        this.correctionTimestamp = correctionTimestamp;
     }
 
     public QuestionLog(long sessionId, int questionNum, long durationMs) {
@@ -170,6 +185,22 @@ public class QuestionLog implements Serializable {
         this.notes = (notes != null) ? notes : "";
     }
 
+    public String getOriginalOutcome() {
+        return originalOutcome != null ? originalOutcome : "";
+    }
+
+    public void setOriginalOutcome(String originalOutcome) {
+        this.originalOutcome = (originalOutcome != null) ? originalOutcome : "";
+    }
+
+    public long getCorrectionTimestamp() {
+        return correctionTimestamp;
+    }
+
+    public void setCorrectionTimestamp(long correctionTimestamp) {
+        this.correctionTimestamp = correctionTimestamp;
+    }
+
     /**
      * Formats duration as MM:SS.s (e.g. 02:14.3)
      */
@@ -197,7 +228,8 @@ public class QuestionLog implements Serializable {
     public com.example.timerapp.model.QuestionLog toUiModel() {
         return new com.example.timerapp.model.QuestionLog(
                 id, sessionId, questionNum, durationMs, completedAt,
-                label, topic, difficulty, outcome, confidence, mistakeTag, notes
+                label, topic, difficulty, outcome, confidence, mistakeTag, notes,
+                originalOutcome, correctionTimestamp
         );
     }
 
@@ -210,7 +242,8 @@ public class QuestionLog implements Serializable {
                 uiLog.getId(), uiLog.getSessionId(), uiLog.getQuestionNumber(),
                 uiLog.getDurationMs(), uiLog.getTimestamp(),
                 uiLog.getLabel(), uiLog.getTopic(), uiLog.getDifficulty(),
-                uiLog.getOutcome(), uiLog.getConfidence(), uiLog.getMistakeTag(), uiLog.getNotes()
+                uiLog.getOutcome(), uiLog.getConfidence(), uiLog.getMistakeTag(), uiLog.getNotes(),
+                uiLog.getOriginalOutcome(), uiLog.getCorrectionTimestamp()
         );
     }
 

@@ -21,6 +21,10 @@ public class QuestionLog {
     private final String mistakeTag;
     private final String notes;
 
+    // Version 4 extended audit fields
+    private final String originalOutcome;
+    private final long correctionTimestamp;
+
     public QuestionLog(long id, long sessionId, int questionNumber, long durationMs, long timestamp) {
         this(id, sessionId, questionNumber, durationMs, timestamp, "", "", "MEDIUM", "SOLVED", 3, "", "");
     }
@@ -28,6 +32,13 @@ public class QuestionLog {
     public QuestionLog(long id, long sessionId, int questionNumber, long durationMs, long timestamp,
                        String label, String topic, String difficulty, String outcome,
                        int confidence, String mistakeTag, String notes) {
+        this(id, sessionId, questionNumber, durationMs, timestamp, label, topic, difficulty, outcome, confidence, mistakeTag, notes, "", 0L);
+    }
+
+    public QuestionLog(long id, long sessionId, int questionNumber, long durationMs, long timestamp,
+                       String label, String topic, String difficulty, String outcome,
+                       int confidence, String mistakeTag, String notes,
+                       String originalOutcome, long correctionTimestamp) {
         this.id = id;
         this.sessionId = sessionId;
         this.questionNumber = questionNumber;
@@ -40,6 +51,8 @@ public class QuestionLog {
         this.confidence = confidence;
         this.mistakeTag = (mistakeTag != null) ? mistakeTag : "";
         this.notes = (notes != null) ? notes : "";
+        this.originalOutcome = (originalOutcome != null) ? originalOutcome : "";
+        this.correctionTimestamp = correctionTimestamp;
     }
 
     public long getId() {
@@ -90,9 +103,18 @@ public class QuestionLog {
         return notes;
     }
 
+    public String getOriginalOutcome() {
+        return originalOutcome != null ? originalOutcome : "";
+    }
+
+    public long getCorrectionTimestamp() {
+        return correctionTimestamp;
+    }
+
     public QuestionLog withTags(String outcome, String difficulty, int confidence, String mistakeTag, String notes) {
         return new QuestionLog(this.id, this.sessionId, this.questionNumber, this.durationMs, this.timestamp,
-                this.label, this.topic, difficulty, outcome, confidence, mistakeTag, notes);
+                this.label, this.topic, difficulty, outcome, confidence, mistakeTag, notes,
+                this.originalOutcome, this.correctionTimestamp);
     }
 
     /**

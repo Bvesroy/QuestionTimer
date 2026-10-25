@@ -2172,6 +2172,40 @@ public class TimerDatabaseManager {
         return sessions;
     }
 
+    public synchronized boolean deleteLastQuestionLogForSession(long sessionId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        Cursor cursor = db.rawQuery("SELECT " + DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID +
+                " FROM " + DatabaseContract.QuestionLogEntry.TABLE_NAME +
+                " WHERE " + DatabaseContract.QuestionLogEntry.COLUMN_SESSION_ID + " = ? " +
+                " ORDER BY " + DatabaseContract.QuestionLogEntry.COLUMN_QUESTION_NUM + " DESC LIMIT 1",
+                new String[]{String.valueOf(sessionId)});
+        try {
+            if (cursor.moveToFirst()) {
+                long logId = cursor.getLong(0);
+                int deleted = db.delete(DatabaseContract.QuestionLogEntry.TABLE_NAME,
+                        DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID + " = ?", new String[]{String.valueOf(logId)});
+                return deleted > 0;
+            }
+        } finally {
+            cursor.close();
+        }
+        return false;
+    }
+
+    public synchronized boolean updateQuestionLogDetails(long logId, String outcome, String difficulty,
+                                                         int confidence, String mistakeTag, String notes) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        if (outcome != null) cv.put(DatabaseContract.QuestionLogEntry.COLUMN_OUTCOME, outcome);
+        if (difficulty != null) cv.put(DatabaseContract.QuestionLogEntry.COLUMN_DIFFICULTY, difficulty);
+        cv.put(DatabaseContract.QuestionLogEntry.COLUMN_CONFIDENCE, confidence);
+        if (mistakeTag != null) cv.put(DatabaseContract.QuestionLogEntry.COLUMN_MISTAKE_TAG, mistakeTag);
+        if (notes != null) cv.put(DatabaseContract.QuestionLogEntry.COLUMN_NOTES, notes);
+        int rows = db.update(DatabaseContract.QuestionLogEntry.TABLE_NAME, cv,
+                DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID + " = ?", new String[]{String.valueOf(logId)});
+        return rows > 0;
+    }
+
     public synchronized int clearQuestionLogsForSession(long sessionId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();

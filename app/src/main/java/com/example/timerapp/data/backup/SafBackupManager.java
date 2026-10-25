@@ -23,7 +23,7 @@ import java.util.Set;
  */
 public class SafBackupManager {
 
-    public static final int ARCHIVE_VERSION = 3;
+    public static final int ARCHIVE_VERSION = 4;
     public static final String APP_IDENTIFIER = "QuestionSolvingTimer";
 
     public enum RestoreMode {
@@ -45,8 +45,16 @@ public class SafBackupManager {
     public static final String KEY_PROFILES = "profiles";
     public static final String KEY_SETTINGS = "settings";
 
+    // Version 4 extended keys
+    public static final String KEY_AUDIT_HISTORY = "audit_history";
+    public static final String KEY_WALLPAPER_SETTINGS = "wallpaper_settings";
+    public static final String KEY_TARGET_DATE = "target_date";
+    public static final String KEY_WIDGET_SETTINGS = "widget_settings";
+    public static final String KEY_TWO_ZONE_ENABLED = "two_zone_enabled";
+
     /**
      * Constructs a full JSON archive with an embedded SHA-256 checksum computed over all data tables.
+     * Preserved for backward-compatibility with v1/v2/v3 callers.
      */
     public static JSONObject createFullArchive(
             JSONArray sessions,
@@ -57,6 +65,27 @@ public class SafBackupManager {
             JSONArray achievements,
             JSONArray profiles,
             JSONObject settings) throws JSONException {
+        return createFullArchive(sessions, questionLogs, breaks, subjects, countdowns, achievements,
+                profiles, settings, new JSONArray(), null, "2027-01-20", null);
+    }
+
+    /**
+     * Constructs a full Version 4 JSON archive with audit history, wallpaper settings,
+     * target date ('2027-01-20'), and widget settings.
+     */
+    public static JSONObject createFullArchive(
+            JSONArray sessions,
+            JSONArray questionLogs,
+            JSONArray breaks,
+            JSONArray subjects,
+            JSONArray countdowns,
+            JSONArray achievements,
+            JSONArray profiles,
+            JSONObject settings,
+            JSONArray auditHistory,
+            JSONObject wallpaperSettings,
+            String targetDate,
+            JSONObject widgetSettings) throws JSONException {
 
         JSONObject root = new JSONObject();
         root.put(KEY_VERSION, ARCHIVE_VERSION);
@@ -71,7 +100,31 @@ public class SafBackupManager {
         dataPayload.put(KEY_COUNTDOWNS, countdowns != null ? countdowns : new JSONArray());
         dataPayload.put(KEY_ACHIEVEMENTS, achievements != null ? achievements : new JSONArray());
         dataPayload.put(KEY_PROFILES, profiles != null ? profiles : new JSONArray());
-        dataPayload.put(KEY_SETTINGS, settings != null ? settings : new JSONObject());
+        dataPayload.put(KEY_AUDIT_HISTORY, auditHistory != null ? auditHistory : new JSONArray());
+
+        JSONObject finalSettings = settings != null ? new JSONObject(settings.toString()) : new JSONObject();
+        String finalTargetDate = (targetDate != null && !targetDate.trim().isEmpty()) ? targetDate.trim() : "2027-01-20";
+        JSONObject finalWallpaper = wallpaperSettings != null ? wallpaperSettings : new JSONObject();
+        JSONObject finalWidget = widgetSettings != null ? widgetSettings : new JSONObject();
+
+        if (!finalSettings.has(KEY_TARGET_DATE)) {
+            finalSettings.put(KEY_TARGET_DATE, finalTargetDate);
+        }
+        if (!finalSettings.has(KEY_WALLPAPER_SETTINGS) && finalWallpaper.length() > 0) {
+            finalSettings.put(KEY_WALLPAPER_SETTINGS, finalWallpaper);
+        }
+        if (!finalSettings.has(KEY_WIDGET_SETTINGS) && finalWidget.length() > 0) {
+            finalSettings.put(KEY_WIDGET_SETTINGS, finalWidget);
+        }
+        if (!finalSettings.has(KEY_TWO_ZONE_ENABLED)) {
+            finalSettings.put(KEY_TWO_ZONE_ENABLED, false);
+        }
+
+        dataPayload.put(KEY_SETTINGS, finalSettings);
+        dataPayload.put(KEY_TARGET_DATE, finalTargetDate);
+        dataPayload.put(KEY_WALLPAPER_SETTINGS, finalWallpaper);
+        dataPayload.put(KEY_WIDGET_SETTINGS, finalWidget);
+        dataPayload.put(KEY_TWO_ZONE_ENABLED, finalSettings.optBoolean(KEY_TWO_ZONE_ENABLED, false));
 
         String payloadString = dataPayload.toString();
         String sha256Checksum = computeSha256(payloadString);
@@ -79,7 +132,7 @@ public class SafBackupManager {
         root.put(KEY_CHECKSUM, sha256Checksum);
         root.put("payload", dataPayload);
 
-        // Also duplicate top-level keys for backward-compatibility with v1/v2 parsers
+        // Also duplicate top-level keys for backward-compatibility with v1/v2/v3 parsers
         root.put(KEY_SESSIONS, dataPayload.get(KEY_SESSIONS));
         root.put(KEY_QUESTION_LOGS, dataPayload.get(KEY_QUESTION_LOGS));
         root.put(KEY_BREAKS, dataPayload.get(KEY_BREAKS));
@@ -88,6 +141,11 @@ public class SafBackupManager {
         root.put(KEY_ACHIEVEMENTS, dataPayload.get(KEY_ACHIEVEMENTS));
         root.put(KEY_PROFILES, dataPayload.get(KEY_PROFILES));
         root.put(KEY_SETTINGS, dataPayload.get(KEY_SETTINGS));
+        root.put(KEY_AUDIT_HISTORY, dataPayload.get(KEY_AUDIT_HISTORY));
+        root.put(KEY_TARGET_DATE, dataPayload.get(KEY_TARGET_DATE));
+        root.put(KEY_WALLPAPER_SETTINGS, dataPayload.get(KEY_WALLPAPER_SETTINGS));
+        root.put(KEY_WIDGET_SETTINGS, dataPayload.get(KEY_WIDGET_SETTINGS));
+        root.put(KEY_TWO_ZONE_ENABLED, dataPayload.get(KEY_TWO_ZONE_ENABLED));
 
         return root;
     }

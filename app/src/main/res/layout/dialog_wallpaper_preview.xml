@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog_card"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Header -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-black"
+        android:letterSpacing="0.12"
+        android:text="JEE PROGRESS WALLPAPER"
+        android:textColor="@color/text_primary"
+        android:textSize="17sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:letterSpacing="0.06"
+        android:text="High-contrast AMOLED artwork generated from your study metrics"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp" />
+
+    <!-- Wallpaper Preview Card -->
+    <FrameLayout
+        android:layout_width="220dp"
+        android:layout_height="380dp"
+        android:layout_marginVertical="16dp"
+        android:background="@drawable/bg_card_border"
+        android:padding="2dp">
+
+        <ImageView
+            android:id="@+id/ivWallpaperPreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="Wallpaper Preview"
+            android:scaleType="fitCenter" />
+    </FrameLayout>
+
+    <!-- Target Screen Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnApplyBoth"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_tonal"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.08"
+            android:text="BOTH SCREENS"
+            android:textColor="@color/accent_highlight"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnApplyHome"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginHorizontal="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_subtle"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.08"
+            android:text="HOME ONLY"
+            android:textColor="@color/text_primary"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnApplyLock"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_subtle"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.08"
+            android:text="LOCK ONLY"
+            android:textColor="@color/text_primary"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Secondary Actions -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnRegenerate"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_subtle"
+            android:letterSpacing="0.08"
+            android:text="REFRESH ARTWORK"
+            android:textColor="@color/accent_running"
+            android:textSize="10sp" />
+
+        <Button
+            android:id="@+id/btnExportImage"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_subtle"
+            android:letterSpacing="0.08"
+            android:text="EXPORT / SAVE"
+            android:textColor="@color/text_primary"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnCloseWallpaperDialog"
+        android:layout_width="match_parent"
+        android:layout_height="38dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_button_text"
+        android:letterSpacing="0.08"
+        android:text="DISMISS"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp" />
+
+</LinearLayout>

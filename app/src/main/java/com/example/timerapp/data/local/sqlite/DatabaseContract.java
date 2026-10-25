@@ -12,7 +12,7 @@ public final class DatabaseContract {
     }
 
     public static final String DATABASE_NAME = "question_timer.db";
-    public static final int DATABASE_VERSION = 3;
+    public static final int DATABASE_VERSION = 4;
 
     /**
      * Session table schema.
@@ -102,6 +102,10 @@ public final class DatabaseContract {
         public static final String COLUMN_MISTAKE_TAG = "mistake_tag";
         public static final String COLUMN_NOTES = "notes";
 
+        // Version 4 extended audit columns
+        public static final String COLUMN_ORIGINAL_OUTCOME = "original_outcome";
+        public static final String COLUMN_CORRECTION_TIMESTAMP = "correction_timestamp";
+
         public static final String SQL_CREATE_TABLE =
                 "CREATE TABLE " + TABLE_NAME + " (" +
                         COLUMN_ALT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -116,6 +120,8 @@ public final class DatabaseContract {
                         COLUMN_CONFIDENCE + " INTEGER DEFAULT 3, " +
                         COLUMN_MISTAKE_TAG + " TEXT DEFAULT '', " +
                         COLUMN_NOTES + " TEXT DEFAULT '', " +
+                        COLUMN_ORIGINAL_OUTCOME + " TEXT DEFAULT '', " +
+                        COLUMN_CORRECTION_TIMESTAMP + " INTEGER DEFAULT 0, " +
                         "FOREIGN KEY(" + COLUMN_SESSION_ID + ") REFERENCES " +
                         SessionEntry.TABLE_NAME + "(" + SessionEntry.COLUMN_ALT_ID + ") ON DELETE CASCADE" +
                         ");";
@@ -293,6 +299,77 @@ public final class DatabaseContract {
                         COLUMN_TITLE + " TEXT NOT NULL, " +
                         COLUMN_UNLOCKED_AT + " INTEGER NOT NULL" +
                         ");";
+
+        public static final String SQL_DROP_TABLE =
+                "DROP TABLE IF EXISTS " + TABLE_NAME + ";";
+    }
+
+    /**
+     * Settings / preferences table schema (Version 4).
+     */
+    public static final class SettingEntry implements BaseColumns {
+        public static final String TABLE_NAME = "settings";
+        public static final String COLUMN_ID = "_id";
+        public static final String COLUMN_ALT_ID = "id";
+        public static final String COLUMN_KEY = "key";
+        public static final String COLUMN_VALUE = "value";
+
+        public static final String SQL_CREATE_TABLE =
+                "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
+                        COLUMN_ALT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        COLUMN_KEY + " TEXT UNIQUE NOT NULL, " +
+                        COLUMN_VALUE + " TEXT NOT NULL" +
+                        ");";
+
+        public static final String SQL_CREATE_IDX_KEY =
+                "CREATE INDEX IF NOT EXISTS idx_settings_key ON " +
+                        TABLE_NAME + " (" + COLUMN_KEY + ");";
+
+        public static final String SQL_DROP_TABLE =
+                "DROP TABLE IF EXISTS " + TABLE_NAME + ";";
+    }
+
+    /**
+     * Attempt audit history table schema (Version 4).
+     * Tracks original outcome, corrected outcome, and correction timestamp for question attempts.
+     */
+    public static final class AttemptAuditEntry implements BaseColumns {
+        public static final String TABLE_NAME = "attempt_audit_history";
+        public static final String COLUMN_ID = "_id";
+        public static final String COLUMN_ALT_ID = "id";
+        public static final String COLUMN_QUESTION_LOG_ID = "question_log_id";
+        public static final String COLUMN_SESSION_ID = "session_id";
+        public static final String COLUMN_ORIGINAL_OUTCOME = "original_outcome";
+        public static final String COLUMN_CORRECTED_OUTCOME = "corrected_outcome";
+        public static final String COLUMN_CORRECTION_TIMESTAMP = "correction_timestamp";
+        public static final String COLUMN_NOTES = "notes";
+
+        public static final String SQL_CREATE_TABLE =
+                "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
+                        COLUMN_ALT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        COLUMN_QUESTION_LOG_ID + " INTEGER NOT NULL, " +
+                        COLUMN_SESSION_ID + " INTEGER NOT NULL, " +
+                        COLUMN_ORIGINAL_OUTCOME + " TEXT NOT NULL, " +
+                        COLUMN_CORRECTED_OUTCOME + " TEXT NOT NULL, " +
+                        COLUMN_CORRECTION_TIMESTAMP + " INTEGER NOT NULL, " +
+                        COLUMN_NOTES + " TEXT DEFAULT '', " +
+                        "FOREIGN KEY(" + COLUMN_QUESTION_LOG_ID + ") REFERENCES " +
+                        QuestionLogEntry.TABLE_NAME + "(" + QuestionLogEntry.COLUMN_ALT_ID + ") ON DELETE CASCADE, " +
+                        "FOREIGN KEY(" + COLUMN_SESSION_ID + ") REFERENCES " +
+                        SessionEntry.TABLE_NAME + "(" + SessionEntry.COLUMN_ALT_ID + ") ON DELETE CASCADE" +
+                        ");";
+
+        public static final String SQL_CREATE_IDX_QUESTION_LOG_ID =
+                "CREATE INDEX IF NOT EXISTS idx_audit_question_log_id ON " +
+                        TABLE_NAME + " (" + COLUMN_QUESTION_LOG_ID + ");";
+
+        public static final String SQL_CREATE_IDX_SESSION_ID =
+                "CREATE INDEX IF NOT EXISTS idx_audit_session_id ON " +
+                        TABLE_NAME + " (" + COLUMN_SESSION_ID + ");";
+
+        public static final String SQL_CREATE_IDX_TIMESTAMP =
+                "CREATE INDEX IF NOT EXISTS idx_audit_correction_time ON " +
+                        TABLE_NAME + " (" + COLUMN_CORRECTION_TIMESTAMP + " DESC);";
 
         public static final String SQL_DROP_TABLE =
                 "DROP TABLE IF EXISTS " + TABLE_NAME + ";";

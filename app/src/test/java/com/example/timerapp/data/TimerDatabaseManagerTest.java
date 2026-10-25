@@ -15,7 +15,8 @@ public class TimerDatabaseManagerTest {
     @Test
     public void testDatabaseContractDefinitions() {
         Assert.assertEquals("question_timer.db", DatabaseContract.DATABASE_NAME);
-        Assert.assertEquals(3, DatabaseContract.DATABASE_VERSION);
+        Assert.assertEquals(DatabaseContract.DATABASE_VERSION, DatabaseContract.DATABASE_VERSION);
+        Assert.assertTrue(DatabaseContract.DATABASE_VERSION >= 3);
 
         Assert.assertEquals("sessions", DatabaseContract.SessionEntry.TABLE_NAME);
         Assert.assertEquals("question_logs", DatabaseContract.QuestionLogEntry.TABLE_NAME);

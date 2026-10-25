@@ -168,6 +168,23 @@ public class TimerSession {
         }
     }
 
+    public QuestionLog removeLastLog() {
+        if (!logs.isEmpty()) {
+            QuestionLog removed = logs.remove(logs.size() - 1);
+            this.currentQuestion = Math.max(1, logs.size() + 1);
+            this.updatedAt = System.currentTimeMillis();
+            return removed;
+        }
+        return null;
+    }
+
+    public QuestionLog getLastLog() {
+        if (!logs.isEmpty()) {
+            return logs.get(logs.size() - 1);
+        }
+        return null;
+    }
+
     public void replaceLog(int index, QuestionLog newLog) {
         if (index >= 0 && index < logs.size() && newLog != null) {
             logs.set(index, newLog);

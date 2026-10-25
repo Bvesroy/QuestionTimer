@@ -80,8 +80,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(DatabaseContract.ExamCountdownEntry.SQL_CREATE_TABLE);
             db.execSQL(DatabaseContract.AchievementEntry.SQL_CREATE_TABLE);
 
+            db.execSQL(DatabaseContract.SettingEntry.SQL_CREATE_TABLE);
+            db.execSQL(DatabaseContract.SettingEntry.SQL_CREATE_IDX_KEY);
+
+            db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_TABLE);
+            db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_QUESTION_LOG_ID);
+            db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_SESSION_ID);
+            db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_TIMESTAMP);
+
             preseedDefaultSubjects(db);
             preseedDefaultExamProfiles(db);
+            preseedDefaultSettings(db);
 
             db.setTransactionSuccessful();
             Log.i(TAG, "Database schema, tables, indexes, and initial seeds created successfully.");
@@ -147,6 +156,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
                 preseedDefaultExamProfiles(db);
                 Log.i(TAG, "Upgraded schema to version 3: added dual clocks, breaks, exam profiles, and study coach feedback.");
+            }
+
+            if (oldVersion < 4) {
+                // Safely migrate question_logs table with v4 audit columns
+                addColumnSafely(db, DatabaseContract.QuestionLogEntry.TABLE_NAME, DatabaseContract.QuestionLogEntry.COLUMN_ORIGINAL_OUTCOME, "TEXT DEFAULT ''");
+                addColumnSafely(db, DatabaseContract.QuestionLogEntry.TABLE_NAME, DatabaseContract.QuestionLogEntry.COLUMN_CORRECTION_TIMESTAMP, "INTEGER DEFAULT 0");
+
+                // Create new tables for v4
+                db.execSQL(DatabaseContract.SettingEntry.SQL_CREATE_TABLE);
+                db.execSQL(DatabaseContract.SettingEntry.SQL_CREATE_IDX_KEY);
+
+                db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_TABLE);
+                db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_QUESTION_LOG_ID);
+                db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_SESSION_ID);
+                db.execSQL(DatabaseContract.AttemptAuditEntry.SQL_CREATE_IDX_TIMESTAMP);
+
+                preseedDefaultSettings(db);
+                Log.i(TAG, "Upgraded schema to version 4: added settings preferences storage and attempt audit history.");
             }
 
             db.setTransactionSuccessful();
@@ -243,5 +270,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv3.put(DatabaseContract.ExamProfileEntry.COLUMN_NEGATIVE_MARKS, 1.0);
         cv3.put(DatabaseContract.ExamProfileEntry.COLUMN_SECTIONS_JSON, "[]");
         db.insertWithOnConflict(DatabaseContract.ExamProfileEntry.TABLE_NAME, null, cv3, SQLiteDatabase.CONFLICT_IGNORE);
+    }
+
+    private void preseedDefaultSettings(SQLiteDatabase db) {
+        String[][] defaultSettings = new String[][]{
+                {"target_date", "2027-01-20"},
+                {"two_zone_enabled", "false"},
+                {"wallpaper_enabled", "false"},
+                {"wallpaper_uri", ""},
+                {"wallpaper_dim_alpha", "0.5"},
+                {"wallpaper_blur_radius", "0"},
+                {"wallpaper_style", "DEFAULT"},
+                {"wallpaper_preferences", "{\"enabled\":false,\"uri\":\"\",\"dim_alpha\":0.5,\"blur_radius\":0,\"style\":\"DEFAULT\"}"},
+                {"widget_theme", "AMOLED"},
+                {"widget_show_countdown", "true"},
+                {"widget_show_daily_goal", "true"},
+                {"widget_opacity", "1.0"},
+                {"widget_refresh_interval_minutes", "15"},
+                {"widget_settings", "{\"theme\":\"AMOLED\",\"show_countdown\":true,\"show_daily_goal\":true,\"opacity\":1.0,\"refresh_interval_minutes\":15}"}
+        };
+
+        for (String[] setting : defaultSettings) {
+            ContentValues cv = new ContentValues();
+            cv.put(DatabaseContract.SettingEntry.COLUMN_KEY, setting[0]);
+            cv.put(DatabaseContract.SettingEntry.COLUMN_VALUE, setting[1]);
+            db.insertWithOnConflict(DatabaseContract.SettingEntry.TABLE_NAME, null, cv, SQLiteDatabase.CONFLICT_IGNORE);
+        }
     }
 }

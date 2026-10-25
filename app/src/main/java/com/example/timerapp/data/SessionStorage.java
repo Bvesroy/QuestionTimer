@@ -151,10 +151,32 @@ public class SessionStorage {
             if (currentLogs.size() > existingCount) {
                 for (int i = existingCount; i < currentLogs.size(); i++) {
                     QuestionLog log = currentLogs.get(i);
-                    dbManager.logQuestionTime(s.getId(), log.getQuestionNumber(), log.getDurationMs());
+                    dbManager.logQuestionTime(s.getId(), log.getQuestionNumber(), log.getDurationMs(),
+                            log.getLabel(), log.getTopic(), log.getDifficulty(), log.getOutcome(),
+                            log.getConfidence(), log.getMistakeTag(), log.getNotes());
                 }
-            } else if (currentLogs.isEmpty() && existingCount > 0) {
-                dbManager.clearQuestionLogsForSession(s.getId());
+            } else if (currentLogs.size() < existingCount) {
+                if (currentLogs.isEmpty()) {
+                    dbManager.clearQuestionLogsForSession(s.getId());
+                } else {
+                    int toDelete = existingCount - currentLogs.size();
+                    for (int i = 0; i < toDelete; i++) {
+                        dbManager.deleteLastQuestionLogForSession(s.getId());
+                    }
+                }
+            }
+
+            // Sync any outcome / mistake tag modifications on existing logs
+            for (int i = 0; i < Math.min(existingCount, currentLogs.size()); i++) {
+                QuestionLog log = currentLogs.get(i);
+                QuestionLog existingLog = uiLogs.get(i);
+                if (log.getId() > 0 && (!log.getOutcome().equals(existingLog.getOutcome())
+                        || !log.getMistakeTag().equals(existingLog.getMistakeTag())
+                        || !log.getNotes().equals(existingLog.getNotes())
+                        || log.getConfidence() != existingLog.getConfidence())) {
+                    dbManager.updateQuestionLogDetails(log.getId(), log.getOutcome(), log.getDifficulty(),
+                            log.getConfidence(), log.getMistakeTag(), log.getNotes());
+                }
             }
         }
     }

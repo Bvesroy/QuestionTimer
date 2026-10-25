@@ -9,9 +9,11 @@
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/ui/SessionsAdapter.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/ui/SessionNotesDialog.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/ui/SessionComparisonDialog.java
+/Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/model/SessionState.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/model/TimerSession.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/model/TimerState.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/model/QuestionLog.java
+/Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/model/QuestionOutcome.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/repository/TimerRepository.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/local/sqlite/DatabaseHelper.java
 /Users/jeemainsadv/TimerStorage/app/src/main/java/com/example/timerapp/data/local/sqlite/TimerDatabaseManager.java

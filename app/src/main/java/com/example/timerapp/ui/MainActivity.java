@@ -94,7 +94,9 @@ public class MainActivity extends Activity {
     private View layoutUndoBanner;
     private TextView tvUndoMessage;
     private Button btnUndoAnswer;
+    private TextView tvLiveAnalytics;
     private boolean isTwoZoneRecordingEnabled = false;
+    private String currentJeeExamType = SettingsDialog.EXAM_TYPE_JEE_MAIN;
     private final Handler undoBannerHandler = new Handler(Looper.getMainLooper());
     private QuestionLog lastRecordedOutcomeLog = null;
 
@@ -176,6 +178,7 @@ public class MainActivity extends Activity {
         SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
         currentTimerSizeMode = prefs.getString(SettingsDialog.KEY_TIMER_SIZE_MODE, SettingsDialog.SIZE_MEDIUM);
         isTwoZoneRecordingEnabled = prefs.getBoolean(SettingsDialog.KEY_TWO_ZONE_RECORDING, false);
+        currentJeeExamType = prefs.getString(SettingsDialog.KEY_JEE_EXAM_TYPE, SettingsDialog.EXAM_TYPE_JEE_MAIN);
 
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         lastInteractionRealtime = SystemClock.elapsedRealtime();
@@ -260,6 +263,7 @@ public class MainActivity extends Activity {
         if (tvTotalStudyClock != null) {
             tvTotalStudyClock.setOnClickListener(v -> handleStudyClockClick());
         }
+        tvLiveAnalytics = findViewById(R.id.tvLiveAnalytics);
         btnDiscard = findViewById(R.id.btnDiscard);
         btnToggle = findViewById(R.id.btnToggle);
         btnHistory = findViewById(R.id.btnHistory);
@@ -442,14 +446,13 @@ public class MainActivity extends Activity {
 
         showUndoAnswerBanner(log);
 
-        // Atomic advance: zero question clock and continue running
-        transitionTo(TimerState.ADVANCING_QUESTION);
-        accumulatedElapsedMs = 0L;
-        startTimeRealtime = SystemClock.elapsedRealtime();
-        continuousRunningStartTime = SystemClock.elapsedRealtime();
-        lastInteractionRealtime = SystemClock.elapsedRealtime();
-
-        transitionTo(TimerState.RUNNING_QUESTION);
+        // Pause timer upon recording outcome:
+        // Tapping upper pauses and marks Wrong; tapping lower pauses and marks Correct.
+        // Next screen tap resumes timing for the subsequent question.
+        transitionTo(TimerState.PAUSED);
+        continuousRunningStartTime = 0L;
+        timerHandler.removeCallbacks(timerTicker);
+        accumulatedElapsedMs = authoritativeDuration;
 
         updateWidgets();
         renderUi();
@@ -470,8 +473,12 @@ public class MainActivity extends Activity {
         if (layoutUndoBanner == null || tvUndoMessage == null) return;
 
         undoBannerHandler.removeCallbacksAndMessages(null);
-        tvUndoMessage.setText(String.format(Locale.ROOT, "Q#%d recorded: %s (%s)",
-                log.getQuestionNumber(), log.getOutcome(), log.getFormattedDuration()));
+        boolean isIncorrect = "INCORRECT".equals(log.getOutcome()) || "WRONG".equals(log.getOutcome());
+        double penalty = "JEE_ADVANCED".equalsIgnoreCase(currentJeeExamType) ? 2.0 : 1.0;
+        String markStr = isIncorrect ? ("-" + (int) penalty + " PTS") : "+4 PTS";
+        String outcomeStr = isIncorrect ? "WRONG" : "CORRECT";
+        tvUndoMessage.setText(String.format(Locale.ROOT, "Q#%d %s (%s, %s)",
+                log.getQuestionNumber(), outcomeStr, markStr, log.getFormattedDuration()));
         layoutUndoBanner.setVisibility(View.VISIBLE);
         layoutUndoBanner.setAlpha(1.0f);
 
@@ -499,6 +506,9 @@ public class MainActivity extends Activity {
         }
 
         if (removed != null) {
+            accumulatedElapsedMs = removed.getDurationMs();
+            List<QuestionLog> remainingLogs = currentSession.getLogs();
+            lastRecordedOutcomeLog = remainingLogs.isEmpty() ? null : remainingLogs.get(remainingLogs.size() - 1);
             Toast.makeText(this, "Undid Question #" + removed.getQuestionNumber() + " (" + removed.getOutcome() + ")", Toast.LENGTH_SHORT).show();
         }
         renderUi();
@@ -820,7 +830,7 @@ public class MainActivity extends Activity {
      * Updates timer readout text and format (monospaced tabular numbers).
      */
     private void updateTimerDisplay() {
-        long elapsed = (currentState == TimerState.RUNNING)
+        long elapsed = (currentState.isRunning())
                 ? (SystemClock.elapsedRealtime() - startTimeRealtime)
                 : accumulatedElapsedMs;
 
@@ -912,7 +922,7 @@ public class MainActivity extends Activity {
             case RUNNING:
             case RUNNING_QUESTION:
                 if (isTwoZoneRecordingEnabled) {
-                    tvStateBadge.setText("TWO-ZONE: UPPER=WRONG • LOWER=SOLVED");
+                    tvStateBadge.setText("UPPER=WRONG • LOWER=CORRECT");
                 } else {
                     tvStateBadge.setText(R.string.badge_running);
                 }
@@ -922,9 +932,20 @@ public class MainActivity extends Activity {
                 btnToggle.setColorFilter(accentColor);
                 break;
             case PAUSED:
-                tvStateBadge.setText(R.string.badge_paused);
-                tvStateBadge.setBackgroundResource(R.drawable.bg_pill_orange);
-                tvStateBadge.setTextColor(Color.parseColor("#FF9F0A"));
+                if (isTwoZoneRecordingEnabled && lastRecordedOutcomeLog != null) {
+                    boolean isWrong = "INCORRECT".equals(lastRecordedOutcomeLog.getOutcome()) || "WRONG".equals(lastRecordedOutcomeLog.getOutcome());
+                    double penalty = "JEE_ADVANCED".equalsIgnoreCase(currentJeeExamType) ? 2.0 : 1.0;
+                    String scoreDelta = isWrong ? ("-" + (int) penalty) : "+4";
+                    String outcomeLabel = isWrong ? "WRONG" : "CORRECT";
+                    int nextQ = (currentSession != null) ? currentSession.getCurrentQuestion() : 2;
+                    tvStateBadge.setText(String.format(Locale.ROOT, "%s (%s PTS) • TAP FOR Q%d", outcomeLabel, scoreDelta, nextQ));
+                    tvStateBadge.setBackgroundResource(isWrong ? R.drawable.bg_pill_orange : R.drawable.bg_pill_accent);
+                    tvStateBadge.setTextColor(isWrong ? Color.parseColor("#FF9F0A") : accentColor);
+                } else {
+                    tvStateBadge.setText(R.string.badge_paused);
+                    tvStateBadge.setBackgroundResource(R.drawable.bg_pill_orange);
+                    tvStateBadge.setTextColor(Color.parseColor("#FF9F0A"));
+                }
                 btnToggle.setImageResource(R.drawable.ic_play);
                 btnToggle.setColorFilter(Color.parseColor("#FF9F0A"));
                 break;
@@ -950,6 +971,20 @@ public class MainActivity extends Activity {
         updateControlsVisibility(!currentState.isRunning(), true);
 
         updateTimerDisplay();
+
+        // Live Performance Analytics KPI Display
+        if (tvLiveAnalytics != null) {
+            if (isTwoZoneRecordingEnabled && currentSession != null && !currentSession.getLogs().isEmpty()) {
+                com.example.timerapp.data.analytics.EstimatedMarksCalculator.PerformanceAnalytics analytics =
+                        com.example.timerapp.data.analytics.EstimatedMarksCalculator.computeAnalytics(
+                                currentJeeExamType, currentSession.getLogs(), currentSession.getTarget()
+                        );
+                tvLiveAnalytics.setText(analytics.getFormattedSummary());
+                tvLiveAnalytics.setVisibility(View.VISIBLE);
+            } else {
+                tvLiveAnalytics.setVisibility(View.GONE);
+            }
+        }
     }
 
     // ==========================================
@@ -1023,7 +1058,15 @@ public class MainActivity extends Activity {
 
             @Override
             public void onTwoZoneRecordingChanged(boolean enabled) {
+                onTwoZoneRecordingChanged(enabled, currentJeeExamType);
+            }
+
+            @Override
+            public void onTwoZoneRecordingChanged(boolean enabled, String examType) {
                 isTwoZoneRecordingEnabled = enabled;
+                if (examType != null) {
+                    currentJeeExamType = examType;
+                }
                 renderUi();
             }
 

@@ -1033,6 +1033,7 @@ public class HistoryBottomSheet extends Dialog {
         int incorrectCount = 0;
         int skippedCount = 0;
         int sillyMistakesCount = 0;
+        long totalDurationAllAttempts = 0L;
 
         long physicsDur = 0, chemistryDur = 0, mathDur = 0;
         int physicsQ = 0, chemistryQ = 0, mathQ = 0;
@@ -1051,13 +1052,14 @@ public class HistoryBottomSheet extends Dialog {
 
                 if ("SOLVED".equals(outcome) || "CORRECT".equals(outcome)) {
                     correctCount++;
-                } else if ("INCORRECT".equals(outcome)) {
+                } else if ("INCORRECT".equals(outcome) || "WRONG".equals(outcome)) {
                     incorrectCount++;
                 } else {
                     skippedCount++;
                 }
 
                 long dur = log.getDurationMs();
+                totalDurationAllAttempts += dur;
                 double durSec = dur / 1000.0;
                 if (durSec > targetPaceSec) {
                     overTargetItems.add(String.format(Locale.ROOT, "Q#%d (%s): %.0fs (Target: %.0fs)",
@@ -1099,7 +1101,8 @@ public class HistoryBottomSheet extends Dialog {
 
         if (tvJeeAccuracy != null) {
             int accuracyPct = totalAttempted > 0 ? (int) Math.round((correctCount * 100.0) / totalAttempted) : 0;
-            tvJeeAccuracy.setText(String.format(Locale.ROOT, "%d%% Accuracy (%d/%d Solved)", accuracyPct, correctCount, totalAttempted));
+            long overallAvgSec = totalAttempted > 0 ? (totalDurationAllAttempts / (totalAttempted * 1000L)) : 0L;
+            tvJeeAccuracy.setText(String.format(Locale.ROOT, "%d%% Accuracy (%d/%d Solved) • %ds/Q avg", accuracyPct, correctCount, totalAttempted, overallAvgSec));
         }
 
         if (tvJeePhysicsBreakdown != null) {

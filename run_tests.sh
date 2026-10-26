@@ -51,6 +51,10 @@ if [ -z "$HAMCREST_JAR" ] || [ ! -f "$HAMCREST_JAR" ]; then
 fi
 
 JSON_JAR="/tmp/json-20240303.jar"
+if [ ! -f "$JSON_JAR" ]; then
+    mkdir -p /tmp
+    curl -fsSL -o "$JSON_JAR" https://repo1.maven.org/maven2/org/json/json/20240303/json-20240303.jar 2>/dev/null || true
+fi
 ANDROID_JAR="/opt/homebrew/share/android-commandlinetools/platforms/android-35/android.jar"
 [ -f "$ANDROID_JAR" ] || ANDROID_JAR="/opt/homebrew/share/android-commandlinetools/platforms/android-34/android.jar"
 
@@ -104,7 +108,8 @@ TEST_EXIT_CODE=0
   com.example.timerapp.data.EstimatedMarksCalculatorTest \
   com.example.timerapp.data.TargetCountdownMathTest \
   com.example.timerapp.data.SchemaV4AndSafSettingsTest \
-  com.example.timerapp.data.DatabaseV4MigrationAndAuditTest || TEST_EXIT_CODE=$?
+  com.example.timerapp.data.DatabaseV4MigrationAndAuditTest \
+  com.example.timerapp.data.OutcomeQuestionTimerAndAnalyticsTest || TEST_EXIT_CODE=$?
 
 SWARM_DIR="${SWARM_DIR:-${SWARM_ROOT:-$(cd "$DIR/../Swarm" 2>/dev/null && pwd -P || echo "${HOME:-}/Swarm")}}"
 ARCHIVE_DIR="$SWARM_DIR/metrics/tests"

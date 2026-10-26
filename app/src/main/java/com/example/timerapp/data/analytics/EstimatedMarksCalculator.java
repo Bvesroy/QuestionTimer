@@ -192,4 +192,106 @@ public class EstimatedMarksCalculator implements Serializable {
                 qualP, qualC, qualM, qualAgg
         );
     }
+
+    public static final String EXAM_JEE_MAIN = "JEE_MAIN";
+    public static final String EXAM_JEE_ADVANCED = "JEE_ADVANCED";
+
+    public static class PerformanceAnalytics implements Serializable {
+        private static final long serialVersionUID = 1L;
+        public final String examType;
+        public final int totalQuestions;
+        public final int correctCount;
+        public final int wrongCount;
+        public final int unattemptedCount;
+        public final double accuracyPercentage;
+        public final long totalSolvingTimeMs;
+        public final double averageSolvingTimeSeconds;
+        public final double estimatedScore;
+        public final double maxPossibleScore;
+        public final double negativePenalty;
+        public final double targetPaceSeconds;
+        public final boolean paceWithinTarget;
+
+        public PerformanceAnalytics(String examType, int totalQuestions, int correctCount, int wrongCount,
+                                    int unattemptedCount, double accuracyPercentage, long totalSolvingTimeMs,
+                                    double averageSolvingTimeSeconds, double estimatedScore,
+                                    double maxPossibleScore, double negativePenalty,
+                                    double targetPaceSeconds, boolean paceWithinTarget) {
+            this.examType = examType;
+            this.totalQuestions = totalQuestions;
+            this.correctCount = correctCount;
+            this.wrongCount = wrongCount;
+            this.unattemptedCount = unattemptedCount;
+            this.accuracyPercentage = accuracyPercentage;
+            this.totalSolvingTimeMs = totalSolvingTimeMs;
+            this.averageSolvingTimeSeconds = averageSolvingTimeSeconds;
+            this.estimatedScore = estimatedScore;
+            this.maxPossibleScore = maxPossibleScore;
+            this.negativePenalty = negativePenalty;
+            this.targetPaceSeconds = targetPaceSeconds;
+            this.paceWithinTarget = paceWithinTarget;
+        }
+
+        public String getFormattedSummary() {
+            return String.format(java.util.Locale.ROOT,
+                    "ACCURACY: %.0f%% (%d/%d) • %dC %dW • EST: %s%.0f PTS • AVG: %.0fs",
+                    accuracyPercentage, correctCount, (correctCount + wrongCount),
+                    correctCount, wrongCount,
+                    estimatedScore >= 0 ? "+" : "", estimatedScore,
+                    averageSolvingTimeSeconds);
+        }
+    }
+
+    public static double calculateEstimatedScore(String examType, int correctCount, int wrongCount) {
+        int validCorrect = Math.max(0, correctCount);
+        int validWrong = Math.max(0, wrongCount);
+        boolean isAdv = EXAM_JEE_ADVANCED.equalsIgnoreCase(examType);
+        double penalty = isAdv ? 2.0 : 1.0;
+        return (validCorrect * 4.0) - (validWrong * penalty);
+    }
+
+    public static double calculateAccuracy(int correctCount, int totalAttempted) {
+        return (totalAttempted > 0) ? (Math.max(0, correctCount) * 100.0 / totalAttempted) : 0.0;
+    }
+
+    public static double calculateAverageSolvingTimeSec(long totalSolvingTimeMs, int totalAttempted) {
+        return (totalAttempted > 0) ? (totalSolvingTimeMs / 1000.0 / totalAttempted) : 0.0;
+    }
+
+    public static PerformanceAnalytics computeAnalytics(String examType, List<com.example.timerapp.model.QuestionLog> logs, int targetCount) {
+        int correct = 0;
+        int wrong = 0;
+        long totalMs = 0L;
+        if (logs != null) {
+            for (com.example.timerapp.model.QuestionLog log : logs) {
+                totalMs += log.getDurationMs();
+                String outcome = (log.getOutcome() != null) ? log.getOutcome().trim().toUpperCase(java.util.Locale.ROOT) : "";
+                if ("CORRECT".equals(outcome) || "SOLVED".equals(outcome)) {
+                    correct++;
+                } else if ("INCORRECT".equals(outcome) || "WRONG".equals(outcome)) {
+                    wrong++;
+                }
+            }
+        }
+        int attempted = correct + wrong;
+        int validTotal = Math.max(attempted, targetCount);
+        int unattempted = Math.max(0, validTotal - attempted);
+        double accuracy = calculateAccuracy(correct, attempted);
+        double avgSec = calculateAverageSolvingTimeSec(totalMs, attempted);
+
+        boolean isAdv = EXAM_JEE_ADVANCED.equalsIgnoreCase(examType);
+        double penaltyPerWrong = isAdv ? 2.0 : 1.0;
+        double targetPace = isAdv ? 180.0 : 144.0;
+        double estimatedScore = (correct * 4.0) - (wrong * penaltyPerWrong);
+        double maxScore = validTotal * 4.0;
+        double negativePenalty = wrong * penaltyPerWrong;
+        boolean paceWithin = attempted > 0 && avgSec <= targetPace;
+
+        return new PerformanceAnalytics(
+                isAdv ? EXAM_JEE_ADVANCED : EXAM_JEE_MAIN,
+                validTotal, correct, wrong, unattempted, accuracy,
+                totalMs, avgSec, estimatedScore, maxScore, negativePenalty,
+                targetPace, paceWithin
+        );
+    }
 }

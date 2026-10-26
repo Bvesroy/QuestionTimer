@@ -16,9 +16,16 @@ import java.util.List;
 public class TwoZoneHitDetector implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public enum Orientation {
+        HORIZONTAL,
+        VERTICAL
+    }
+
     public enum TouchZone {
         ZONE_LEFT,
         ZONE_RIGHT,
+        ZONE_UPPER,
+        ZONE_LOWER,
         ZONE_EXCLUDED,
         ZONE_DEADZONE,
         ZONE_OUT_OF_BOUNDS
@@ -47,6 +54,7 @@ public class TwoZoneHitDetector implements Serializable {
     private final int screenHeight;
     private float splitRatio = 0.5f;
     private float deadZoneWidthPx = 0f;
+    private Orientation orientation = Orientation.HORIZONTAL;
     private final List<ExclusionRect> exclusionZones = new ArrayList<>();
 
     public TwoZoneHitDetector(int screenWidth, int screenHeight) {
@@ -58,6 +66,16 @@ public class TwoZoneHitDetector implements Serializable {
         this(screenWidth, screenHeight);
         setSplitRatio(splitRatio);
         setDeadZoneWidthPx(deadZoneWidthPx);
+    }
+
+    public void setOrientation(Orientation orientation) {
+        if (orientation != null) {
+            this.orientation = orientation;
+        }
+    }
+
+    public Orientation getOrientation() {
+        return orientation;
     }
 
     public void setSplitRatio(float splitRatio) {
@@ -91,6 +109,19 @@ public class TwoZoneHitDetector implements Serializable {
     }
 
     /**
+     * Convenience method specifically for vertical two-zone division (Upper=Wrong, Lower=Correct).
+     */
+    public TouchZone detectVerticalZone(float x, float y) {
+        Orientation prev = this.orientation;
+        try {
+            this.orientation = Orientation.VERTICAL;
+            return detectZone(x, y);
+        } finally {
+            this.orientation = prev;
+        }
+    }
+
+    /**
      * Evaluates screen coordinates (x, y) and classifies into appropriate TouchZone.
      */
     public TouchZone detectZone(float x, float y) {
@@ -106,7 +137,19 @@ public class TwoZoneHitDetector implements Serializable {
             }
         }
 
-        // 3. Dead zone calculation around the split dividing line
+        // 3. Vertical two-zone evaluation (Upper vs Lower)
+        if (orientation == Orientation.VERTICAL) {
+            float splitY = screenHeight * splitRatio;
+            if (deadZoneWidthPx > 0f) {
+                float halfDead = deadZoneWidthPx / 2.0f;
+                if (y >= (splitY - halfDead) && y <= (splitY + halfDead)) {
+                    return TouchZone.ZONE_DEADZONE;
+                }
+            }
+            return (y < splitY) ? TouchZone.ZONE_UPPER : TouchZone.ZONE_LOWER;
+        }
+
+        // 4. Horizontal two-zone evaluation (Left vs Right)
         float splitX = screenWidth * splitRatio;
         if (deadZoneWidthPx > 0f) {
             float halfDead = deadZoneWidthPx / 2.0f;
@@ -115,7 +158,6 @@ public class TwoZoneHitDetector implements Serializable {
             }
         }
 
-        // 4. Two-zone hit resolution
         return (x < splitX) ? TouchZone.ZONE_LEFT : TouchZone.ZONE_RIGHT;
     }
 }

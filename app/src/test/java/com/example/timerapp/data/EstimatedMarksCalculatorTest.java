@@ -204,4 +204,76 @@ public class EstimatedMarksCalculatorTest {
         Assert.assertTrue(failedPhysics.qualifiedAggregate);
         Assert.assertFalse(failedPhysics.isFullyQualified());
     }
+
+    // ==========================================
+    // Unified Performance Analytics & Live Scoring Tests
+    // ==========================================
+
+    @Test
+    public void testCalculateEstimatedScore_jeeMainAndAdvanced() {
+        // 10 Correct, 3 Wrong
+        // JEE Main: (10 * 4) - (3 * 1) = 40 - 3 = 37
+        double mainScore = EstimatedMarksCalculator.calculateEstimatedScore(
+                EstimatedMarksCalculator.EXAM_JEE_MAIN, 10, 3
+        );
+        Assert.assertEquals(37.0, mainScore, 0.001);
+
+        // JEE Advanced: (10 * 4) - (3 * 2) = 40 - 6 = 34
+        double advScore = EstimatedMarksCalculator.calculateEstimatedScore(
+                EstimatedMarksCalculator.EXAM_JEE_ADVANCED, 10, 3
+        );
+        Assert.assertEquals(34.0, advScore, 0.001);
+
+        // Boundary: 0 correct, 5 wrong
+        Assert.assertEquals(-5.0, EstimatedMarksCalculator.calculateEstimatedScore(EstimatedMarksCalculator.EXAM_JEE_MAIN, 0, 5), 0.001);
+        Assert.assertEquals(-10.0, EstimatedMarksCalculator.calculateEstimatedScore(EstimatedMarksCalculator.EXAM_JEE_ADVANCED, 0, 5), 0.001);
+    }
+
+    @Test
+    public void testComputeAnalytics_accurateMetricsCalculation() {
+        List<com.example.timerapp.model.QuestionLog> logs = new ArrayList<>();
+        // Q1: Correct in 60,000 ms
+        logs.add(new com.example.timerapp.model.QuestionLog(1L, 10L, 1, 60000L, System.currentTimeMillis(), "", "Physics", "MEDIUM", "CORRECT", 3, "", ""));
+        // Q2: Correct in 90,000 ms
+        logs.add(new com.example.timerapp.model.QuestionLog(2L, 10L, 2, 90000L, System.currentTimeMillis(), "", "Physics", "MEDIUM", "SOLVED", 3, "", ""));
+        // Q3: Wrong in 120,000 ms
+        logs.add(new com.example.timerapp.model.QuestionLog(3L, 10L, 3, 120000L, System.currentTimeMillis(), "", "Physics", "HARD", "INCORRECT", 2, "CALC_ERROR", ""));
+        // Q4: Correct in 50,000 ms
+        logs.add(new com.example.timerapp.model.QuestionLog(4L, 10L, 4, 50000L, System.currentTimeMillis(), "", "Physics", "EASY", "CORRECT", 3, "", ""));
+
+        // Total questions attempted = 4; 3 correct, 1 wrong.
+        // Total duration = 60s + 90s + 120s + 50s = 320,000 ms = 320s
+        // Average solving time = 320 / 4 = 80s per question
+        // Accuracy = 3 / 4 = 75.0%
+
+        // JEE Main Analytics: Score = (3 * 4) - (1 * 1) = 11 pts
+        EstimatedMarksCalculator.PerformanceAnalytics mainAnalytics =
+                EstimatedMarksCalculator.computeAnalytics(EstimatedMarksCalculator.EXAM_JEE_MAIN, logs, 10);
+
+        Assert.assertEquals(10, mainAnalytics.totalQuestions);
+        Assert.assertEquals(3, mainAnalytics.correctCount);
+        Assert.assertEquals(1, mainAnalytics.wrongCount);
+        Assert.assertEquals(6, mainAnalytics.unattemptedCount);
+        Assert.assertEquals(75.0, mainAnalytics.accuracyPercentage, 0.001);
+        Assert.assertEquals(320000L, mainAnalytics.totalSolvingTimeMs);
+        Assert.assertEquals(80.0, mainAnalytics.averageSolvingTimeSeconds, 0.001);
+        Assert.assertEquals(11.0, mainAnalytics.estimatedScore, 0.001);
+        Assert.assertEquals(1.0, mainAnalytics.negativePenalty, 0.001);
+        Assert.assertTrue(mainAnalytics.paceWithinTarget); // 80s <= 144s target pace
+
+        // JEE Advanced Analytics: Score = (3 * 4) - (1 * 2) = 10 pts
+        EstimatedMarksCalculator.PerformanceAnalytics advAnalytics =
+                EstimatedMarksCalculator.computeAnalytics(EstimatedMarksCalculator.EXAM_JEE_ADVANCED, logs, 10);
+
+        Assert.assertEquals(10.0, advAnalytics.estimatedScore, 0.001);
+        Assert.assertEquals(2.0, advAnalytics.negativePenalty, 0.001);
+        Assert.assertTrue(advAnalytics.paceWithinTarget); // 80s <= 180s target pace
+
+        // Summary format check
+        String summary = mainAnalytics.getFormattedSummary();
+        Assert.assertTrue(summary.contains("ACCURACY: 75%"));
+        Assert.assertTrue(summary.contains("3C 1W"));
+        Assert.assertTrue(summary.contains("+11 PTS"));
+        Assert.assertTrue(summary.contains("80s"));
+    }
 }

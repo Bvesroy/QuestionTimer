@@ -231,4 +231,50 @@ public class TwoZoneHitDetectionAndUndoTest {
         Assert.assertFalse(recorder.undoLastRecord());
         Assert.assertFalse(recorder.canUndo());
     }
+
+    // ==========================================
+    // Vertical Two-Zone (Upper=Wrong, Lower=Correct) Tests
+    // ==========================================
+
+    @Test
+    public void testVerticalTwoZoneHitDetection_upperWrongLowerCorrect() {
+        hitDetector.setOrientation(TwoZoneHitDetector.Orientation.VERTICAL);
+        Assert.assertEquals(TwoZoneHitDetector.Orientation.VERTICAL, hitDetector.getOrientation());
+
+        // Screen is 1080 x 1920. Split line = 1920 * 0.5 = 960px.
+        // Upper zone (y < 960): Marks question WRONG
+        Assert.assertEquals(TouchZone.ZONE_UPPER, hitDetector.detectZone(540f, 0f));
+        Assert.assertEquals(TouchZone.ZONE_UPPER, hitDetector.detectZone(100f, 400f));
+        Assert.assertEquals(TouchZone.ZONE_UPPER, hitDetector.detectZone(900f, 959f));
+
+        // Lower zone (y >= 960): Marks question CORRECT
+        Assert.assertEquals(TouchZone.ZONE_LOWER, hitDetector.detectZone(540f, 960f));
+        Assert.assertEquals(TouchZone.ZONE_LOWER, hitDetector.detectZone(200f, 1400f));
+        Assert.assertEquals(TouchZone.ZONE_LOWER, hitDetector.detectZone(1000f, 1920f));
+
+        // Convenience method detectVerticalZone works regardless of default orientation
+        hitDetector.setOrientation(TwoZoneHitDetector.Orientation.HORIZONTAL);
+        Assert.assertEquals(TouchZone.ZONE_UPPER, hitDetector.detectVerticalZone(540f, 300f));
+        Assert.assertEquals(TouchZone.ZONE_LOWER, hitDetector.detectVerticalZone(540f, 1500f));
+    }
+
+    @Test
+    public void testVerticalTwoZoneDeadZoneAndExclusions() {
+        hitDetector.setOrientation(TwoZoneHitDetector.Orientation.VERTICAL);
+        // Add 20px dead zone around the center dividing line (y = 960 -> 950 to 970)
+        hitDetector.setDeadZoneWidthPx(20f);
+        Assert.assertEquals(20f, hitDetector.getDeadZoneWidthPx(), 0.001f);
+
+        Assert.assertEquals(TouchZone.ZONE_DEADZONE, hitDetector.detectZone(540f, 960f));
+        Assert.assertEquals(TouchZone.ZONE_DEADZONE, hitDetector.detectZone(540f, 955f));
+        Assert.assertEquals(TouchZone.ZONE_DEADZONE, hitDetector.detectZone(540f, 965f));
+
+        // Outside deadzone
+        Assert.assertEquals(TouchZone.ZONE_UPPER, hitDetector.detectZone(540f, 949f));
+        Assert.assertEquals(TouchZone.ZONE_LOWER, hitDetector.detectZone(540f, 971f));
+
+        // Exclusion zones take precedence in vertical mode too
+        hitDetector.addExclusionZone(0, 0, 1080, 150); // Top bar
+        Assert.assertEquals(TouchZone.ZONE_EXCLUDED, hitDetector.detectZone(540f, 50f));
+    }
 }

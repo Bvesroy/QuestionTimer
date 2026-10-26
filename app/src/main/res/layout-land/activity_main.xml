@@ -149,6 +149,21 @@
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
 
+        <!-- Live Outcome Performance Analytics KPI Display -->
+        <TextView
+            android:id="@+id/tvLiveAnalytics"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:letterSpacing="0.06"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp"
+            android:visibility="gone"
+            tools:text="ACCURACY: 80% (4/5) • 4C 1W • EST: +15 PTS • AVG: 52s"
+            tools:visibility="visible" />
+
     </LinearLayout>
 
     <!-- Transient Undo Notification Banner -->

@@ -45,6 +45,9 @@ public class SettingsDialog extends Dialog {
         void onThemeChanged(String theme, String accent);
         default void onFocusControlsChanged() {}
         default void onTwoZoneRecordingChanged(boolean enabled) {}
+        default void onTwoZoneRecordingChanged(boolean enabled, String examType) {
+            onTwoZoneRecordingChanged(enabled);
+        }
         default void onOpenWallpaperPreview() {}
         default void onOpenMistakeReview() {}
         default void onChooseBackupFolderRequested() {}
@@ -70,6 +73,9 @@ public class SettingsDialog extends Dialog {
     public static final String KEY_BREAK_MINUTES = "break_reminder_minutes";
 
     public static final String KEY_TWO_ZONE_RECORDING = "two_zone_recording_enabled";
+    public static final String KEY_JEE_EXAM_TYPE = "jee_exam_type";
+    public static final String EXAM_TYPE_JEE_MAIN = "JEE_MAIN";
+    public static final String EXAM_TYPE_JEE_ADVANCED = "JEE_ADVANCED";
     public static final String KEY_WALLPAPER_AUTO_APPLY = "wallpaper_auto_apply";
 
     public static final String KEY_PIN_ENABLED = "privacy_pin_enabled";
@@ -121,6 +127,8 @@ public class SettingsDialog extends Dialog {
     private CheckBox cbTwoZoneAnswer, cbAutoApplyWallpaper;
     private Button btnPreviewWallpaper, btnOpenMistakeReview;
     private Spinner spinnerIdleDetection, spinnerBreakReminder;
+    private Spinner spinnerJeeExamType;
+    private View layoutJeeExamType;
 
     // Backup & Privacy views
     private CheckBox cbEnablePinLock;
@@ -358,12 +366,32 @@ public class SettingsDialog extends Dialog {
         spinnerBreakReminder.setSelection(savedBreak == 25 ? 1 : (savedBreak == 45 ? 2 : (savedBreak == 60 ? 3 : 0)));
 
         cbTwoZoneAnswer = view.findViewById(R.id.cbTwoZoneAnswer);
+        layoutJeeExamType = view.findViewById(R.id.layoutJeeExamType);
+        spinnerJeeExamType = view.findViewById(R.id.spinnerJeeExamType);
+
+        String[] examTypeOpts = {"JEE Main (+4 / -1 Marking)", "JEE Advanced (+4 / -2 Marking)"};
+        ArrayAdapter<String> examTypeAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, examTypeOpts);
+        if (spinnerJeeExamType != null) {
+            spinnerJeeExamType.setAdapter(examTypeAdapter);
+            String savedExamType = prefs.getString(KEY_JEE_EXAM_TYPE, EXAM_TYPE_JEE_MAIN);
+            spinnerJeeExamType.setSelection(EXAM_TYPE_JEE_ADVANCED.equalsIgnoreCase(savedExamType) ? 1 : 0);
+        }
+
         cbAutoApplyWallpaper = view.findViewById(R.id.cbAutoApplyWallpaper);
         btnPreviewWallpaper = view.findViewById(R.id.btnPreviewWallpaper);
         btnOpenMistakeReview = view.findViewById(R.id.btnOpenMistakeReview);
 
         if (cbTwoZoneAnswer != null) {
-            cbTwoZoneAnswer.setChecked(prefs.getBoolean(KEY_TWO_ZONE_RECORDING, false));
+            boolean twoZoneActive = prefs.getBoolean(KEY_TWO_ZONE_RECORDING, false);
+            cbTwoZoneAnswer.setChecked(twoZoneActive);
+            if (layoutJeeExamType != null) {
+                layoutJeeExamType.setVisibility(twoZoneActive ? View.VISIBLE : View.GONE);
+            }
+            cbTwoZoneAnswer.setOnCheckedChangeListener((btn, isChecked) -> {
+                if (layoutJeeExamType != null) {
+                    layoutJeeExamType.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                }
+            });
         }
         if (cbAutoApplyWallpaper != null) {
             cbAutoApplyWallpaper.setChecked(prefs.getBoolean(KEY_WALLPAPER_AUTO_APPLY, false));
@@ -622,6 +650,10 @@ public class SettingsDialog extends Dialog {
         } catch (NumberFormatException ignored) {}
 
         boolean twoZone = (cbTwoZoneAnswer != null && cbTwoZoneAnswer.isChecked());
+        String selectedExamType = EXAM_TYPE_JEE_MAIN;
+        if (spinnerJeeExamType != null && spinnerJeeExamType.getSelectedItemPosition() == 1) {
+            selectedExamType = EXAM_TYPE_JEE_ADVANCED;
+        }
         boolean autoWallpaper = (cbAutoApplyWallpaper != null && cbAutoApplyWallpaper.isChecked());
 
         prefs.edit()
@@ -639,6 +671,7 @@ public class SettingsDialog extends Dialog {
                 .putInt(KEY_IDLE_MINUTES, idleMins)
                 .putInt(KEY_BREAK_MINUTES, breakMins)
                 .putBoolean(KEY_TWO_ZONE_RECORDING, twoZone)
+                .putString(KEY_JEE_EXAM_TYPE, selectedExamType)
                 .putBoolean(KEY_WALLPAPER_AUTO_APPLY, autoWallpaper)
                 .putBoolean(KEY_PIN_ENABLED, cbEnablePinLock.isChecked())
                 .putString(KEY_PIN_CODE, etPrivacyPin.getText().toString().trim())
@@ -648,7 +681,7 @@ public class SettingsDialog extends Dialog {
             listener.onTargetsChanged(currentTargetSecPerQ, currentTargetSessionMin, currentTargetQuestions);
             listener.onThemeChanged(currentTheme, currentAccent);
             listener.onFocusControlsChanged();
-            listener.onTwoZoneRecordingChanged(twoZone);
+            listener.onTwoZoneRecordingChanged(twoZone, selectedExamType);
         }
         dismiss();
     }

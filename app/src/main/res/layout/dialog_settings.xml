@@ -937,9 +937,33 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Splits active interaction screen into Upper (Incorrect) and Lower (Correct) with invisible boundary. Authoritatively logs duration, outcome, and advances question without resetting Total Study Clock."
+                    android:text="Splits active interaction screen into Upper (Incorrect) and Lower (Correct) with invisible boundary. Tapping pauses timer and logs outcome; tapping again starts timing next question."
                     android:textColor="@color/text_secondary"
                     android:textSize="10sp" />
+
+                <LinearLayout
+                    android:id="@+id/layoutJeeExamType"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.08"
+                        android:text="QUESTION TYPE &amp; MARKING SCHEME"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <Spinner
+                        android:id="@+id/spinnerJeeExamType"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="4dp"
+                        android:background="@drawable/bg_pill"
+                        android:popupBackground="@drawable/bg_dialog_card" />
+                </LinearLayout>
 
                 <View
                     android:layout_width="match_parent"

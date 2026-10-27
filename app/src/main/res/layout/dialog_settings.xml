@@ -1022,6 +1022,81 @@
                         android:layout_marginTop="4dp"
                         android:background="@drawable/bg_pill"
                         android:popupBackground="@drawable/bg_dialog_card" />
+
+                    <!-- Two-Zone Visual Click Effects Setting -->
+                    <CheckBox
+                        android:id="@+id/cbZoneClickEffect"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:checked="true"
+                        android:text="Show Red / Green Clicky Feedback"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Flashes red on upper screen (Wrong) and green on lower screen (Right) upon tap."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutZoneClickEffectOptions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.08"
+                                android:text="EFFECT TIMING"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <Spinner
+                                android:id="@+id/spinnerClickEffectDuration"
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:layout_marginTop="4dp"
+                                android:background="@drawable/bg_pill"
+                                android:popupBackground="@drawable/bg_dialog_card" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.08"
+                                android:text="TRANSITION STYLE"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <Spinner
+                                android:id="@+id/spinnerClickTransition"
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:layout_marginTop="4dp"
+                                android:background="@drawable/bg_pill"
+                                android:popupBackground="@drawable/bg_dialog_card" />
+                        </LinearLayout>
+                    </LinearLayout>
                 </LinearLayout>
 
                 <View

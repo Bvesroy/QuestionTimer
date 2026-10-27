@@ -20,6 +20,15 @@ public class DisplaySettings implements Serializable {
     public static final String KEY_END_TIMER_TEXT_STYLE = "end_timer_text_style";
     public static final String KEY_EXAM_BANNER_ENABLED = "exam_banner_enabled";
 
+    // Two-Zone Click Feedback Effect Keys & Constants
+    public static final String KEY_ZONE_EFFECT_ENABLED = "zone_click_effect_enabled";
+    public static final String KEY_ZONE_EFFECT_DURATION_MS = "zone_click_effect_duration_ms";
+    public static final String KEY_ZONE_EFFECT_STYLE = "zone_click_effect_style";
+
+    public static final String EFFECT_STYLE_FADE = "FADE_OUT";
+    public static final String EFFECT_STYLE_SCALE = "RIPPLE_SCALE";
+    public static final String EFFECT_STYLE_POP = "INSTANT_POP";
+
     // Corner positioning constants
     public static final String POS_BOTTOM_LEFT = "BOTTOM_LEFT";
     public static final String POS_BOTTOM_RIGHT = "BOTTOM_RIGHT";
@@ -62,6 +71,9 @@ public class DisplaySettings implements Serializable {
     private String endTimerTransition;
     private String endTimerTextStyle;
     private boolean examBannerEnabled;
+    private boolean zoneEffectEnabled;
+    private int zoneEffectDurationMs;
+    private String zoneEffectStyle;
 
     public DisplaySettings() {
         this.showStatusHints = true;
@@ -72,12 +84,26 @@ public class DisplaySettings implements Serializable {
         this.endTimerTransition = TRANSITION_SMOOTH_FADE;
         this.endTimerTextStyle = TEXT_STYLE_STANDARD;
         this.examBannerEnabled = true;
+        this.zoneEffectEnabled = true;
+        this.zoneEffectDurationMs = 300;
+        this.zoneEffectStyle = EFFECT_STYLE_FADE;
     }
 
     public DisplaySettings(boolean showStatusHints, boolean cleanCountingMode,
                            String studyTimerPosition, String timerFontFamily,
                            String endTimerEffect, String endTimerTransition,
                            String endTimerTextStyle, boolean examBannerEnabled) {
+        this(showStatusHints, cleanCountingMode, studyTimerPosition, timerFontFamily,
+             endTimerEffect, endTimerTransition, endTimerTextStyle, examBannerEnabled,
+             true, 300, EFFECT_STYLE_FADE);
+    }
+
+    public DisplaySettings(boolean showStatusHints, boolean cleanCountingMode,
+                           String studyTimerPosition, String timerFontFamily,
+                           String endTimerEffect, String endTimerTransition,
+                           String endTimerTextStyle, boolean examBannerEnabled,
+                           boolean zoneEffectEnabled, int zoneEffectDurationMs,
+                           String zoneEffectStyle) {
         this.showStatusHints = showStatusHints;
         this.cleanCountingMode = cleanCountingMode;
         this.studyTimerPosition = (studyTimerPosition != null) ? studyTimerPosition : POS_BOTTOM_LEFT;
@@ -86,6 +112,9 @@ public class DisplaySettings implements Serializable {
         this.endTimerTransition = (endTimerTransition != null) ? endTimerTransition : TRANSITION_SMOOTH_FADE;
         this.endTimerTextStyle = (endTimerTextStyle != null) ? endTimerTextStyle : TEXT_STYLE_STANDARD;
         this.examBannerEnabled = examBannerEnabled;
+        this.zoneEffectEnabled = zoneEffectEnabled;
+        this.zoneEffectDurationMs = (zoneEffectDurationMs > 0) ? zoneEffectDurationMs : 300;
+        this.zoneEffectStyle = (zoneEffectStyle != null) ? zoneEffectStyle : EFFECT_STYLE_FADE;
     }
 
     public boolean isShowStatusHints() {
@@ -150,6 +179,30 @@ public class DisplaySettings implements Serializable {
 
     public void setExamBannerEnabled(boolean examBannerEnabled) {
         this.examBannerEnabled = examBannerEnabled;
+    }
+
+    public boolean isZoneEffectEnabled() {
+        return zoneEffectEnabled;
+    }
+
+    public void setZoneEffectEnabled(boolean zoneEffectEnabled) {
+        this.zoneEffectEnabled = zoneEffectEnabled;
+    }
+
+    public int getZoneEffectDurationMs() {
+        return zoneEffectDurationMs;
+    }
+
+    public void setZoneEffectDurationMs(int zoneEffectDurationMs) {
+        this.zoneEffectDurationMs = (zoneEffectDurationMs > 0) ? zoneEffectDurationMs : 300;
+    }
+
+    public String getZoneEffectStyle() {
+        return zoneEffectStyle != null ? zoneEffectStyle : EFFECT_STYLE_FADE;
+    }
+
+    public void setZoneEffectStyle(String zoneEffectStyle) {
+        this.zoneEffectStyle = (zoneEffectStyle != null) ? zoneEffectStyle : EFFECT_STYLE_FADE;
     }
 
     @Override

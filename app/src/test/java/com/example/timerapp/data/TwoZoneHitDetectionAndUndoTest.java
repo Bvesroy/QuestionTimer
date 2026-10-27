@@ -277,4 +277,22 @@ public class TwoZoneHitDetectionAndUndoTest {
         hitDetector.addExclusionZone(0, 0, 1080, 150); // Top bar
         Assert.assertEquals(TouchZone.ZONE_EXCLUDED, hitDetector.detectZone(540f, 50f));
     }
+
+    @Test
+    public void testLandscapeModeVerticalTwoZoneHitDetection() {
+        // Landscape display orientation: width = 1920, height = 1080
+        TwoZoneHitDetector landDetector = new TwoZoneHitDetector(1920, 1080);
+        landDetector.setOrientation(TwoZoneHitDetector.Orientation.VERTICAL);
+
+        // Midpoint dividing line: height / 2 = 540px
+        // Upper zone taps (y < 540) -> ZONE_UPPER (Wrong outcome + Red flash)
+        Assert.assertEquals(TouchZone.ZONE_UPPER, landDetector.detectZone(960f, 0f));
+        Assert.assertEquals(TouchZone.ZONE_UPPER, landDetector.detectZone(100f, 250f));
+        Assert.assertEquals(TouchZone.ZONE_UPPER, landDetector.detectZone(1800f, 539f));
+
+        // Lower zone taps (y >= 540) -> ZONE_LOWER (Right outcome + Green flash)
+        Assert.assertEquals(TouchZone.ZONE_LOWER, landDetector.detectZone(960f, 540f));
+        Assert.assertEquals(TouchZone.ZONE_LOWER, landDetector.detectZone(400f, 800f));
+        Assert.assertEquals(TouchZone.ZONE_LOWER, landDetector.detectZone(1900f, 1079f));
+    }
 }

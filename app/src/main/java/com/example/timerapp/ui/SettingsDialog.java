@@ -85,6 +85,16 @@ public class SettingsDialog extends Dialog {
     public static final String KEY_SAF_BACKUP_PATH = "saf_backup_folder_path";
     public static final String KEY_SAF_BACKUP_URI = "saf_backup_folder_uri";
 
+    // Two-Zone Click Feedback Effect Keys
+    public static final String KEY_ZONE_EFFECT_ENABLED = "zone_click_effect_enabled";
+    public static final String KEY_ZONE_EFFECT_DURATION_MS = "zone_click_effect_duration_ms";
+    public static final String KEY_ZONE_EFFECT_STYLE = "zone_click_effect_style";
+
+    // Click effect transition style constants
+    public static final String EFFECT_STYLE_FADE = "FADE_OUT";
+    public static final String EFFECT_STYLE_SCALE = "RIPPLE_SCALE";
+    public static final String EFFECT_STYLE_POP = "INSTANT_POP";
+
     // Display & Layout Settings Keys
     public static final String KEY_SHOW_STATUS_HINTS = "show_status_hints";
     public static final String KEY_CLEAN_COUNTING_MODE = "clean_counting_mode";
@@ -169,6 +179,9 @@ public class SettingsDialog extends Dialog {
     // Sound & Focus views
     private CheckBox cbHapticFeedback, cbAudioChime, cbAutoPip;
     private CheckBox cbTwoZoneAnswer, cbAutoApplyWallpaper;
+    private CheckBox cbZoneClickEffect;
+    private View layoutZoneClickEffectOptions;
+    private Spinner spinnerClickEffectDuration, spinnerClickTransition;
     private Button btnPreviewWallpaper, btnOpenMistakeReview;
     private Spinner spinnerIdleDetection, spinnerBreakReminder;
     private Spinner spinnerJeeExamType;
@@ -546,6 +559,57 @@ public class SettingsDialog extends Dialog {
             spinnerJeeExamType.setSelection(EXAM_TYPE_JEE_ADVANCED.equalsIgnoreCase(savedExamType) ? 1 : 0);
         }
 
+        // Two-Zone Click Feedback Effect Options
+        cbZoneClickEffect = view.findViewById(R.id.cbZoneClickEffect);
+        layoutZoneClickEffectOptions = view.findViewById(R.id.layoutZoneClickEffectOptions);
+        spinnerClickEffectDuration = view.findViewById(R.id.spinnerClickEffectDuration);
+        spinnerClickTransition = view.findViewById(R.id.spinnerClickTransition);
+
+        final int[] durationValues = {150, 300, 500, 800, 1200};
+        String[] durationLabels = {"Snappy (150ms)", "Normal (300ms - Default)", "Smooth (500ms)", "Extended (800ms)", "Long (1200ms)"};
+        ArrayAdapter<String> durAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, durationLabels);
+        if (spinnerClickEffectDuration != null) {
+            spinnerClickEffectDuration.setAdapter(durAdapter);
+            int savedDuration = prefs.getInt(KEY_ZONE_EFFECT_DURATION_MS, 300);
+            int sel = 1;
+            for (int i = 0; i < durationValues.length; i++) {
+                if (durationValues[i] == savedDuration) {
+                    sel = i;
+                    break;
+                }
+            }
+            spinnerClickEffectDuration.setSelection(sel);
+        }
+
+        final String[] styleValues = {EFFECT_STYLE_FADE, EFFECT_STYLE_SCALE, EFFECT_STYLE_POP};
+        String[] styleLabels = {"Smooth Fade Out (Default)", "Expanding Ripple / Scale", "Instant Flash Pop"};
+        ArrayAdapter<String> styleAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, styleLabels);
+        if (spinnerClickTransition != null) {
+            spinnerClickTransition.setAdapter(styleAdapter);
+            String savedStyle = prefs.getString(KEY_ZONE_EFFECT_STYLE, EFFECT_STYLE_FADE);
+            int sel = 0;
+            for (int i = 0; i < styleValues.length; i++) {
+                if (styleValues[i].equalsIgnoreCase(savedStyle)) {
+                    sel = i;
+                    break;
+                }
+            }
+            spinnerClickTransition.setSelection(sel);
+        }
+
+        if (cbZoneClickEffect != null) {
+            boolean effectEnabled = prefs.getBoolean(KEY_ZONE_EFFECT_ENABLED, true);
+            cbZoneClickEffect.setChecked(effectEnabled);
+            if (layoutZoneClickEffectOptions != null) {
+                layoutZoneClickEffectOptions.setVisibility(effectEnabled ? View.VISIBLE : View.GONE);
+            }
+            cbZoneClickEffect.setOnCheckedChangeListener((btn, isChecked) -> {
+                if (layoutZoneClickEffectOptions != null) {
+                    layoutZoneClickEffectOptions.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+                }
+            });
+        }
+
         cbAutoApplyWallpaper = view.findViewById(R.id.cbAutoApplyWallpaper);
         btnPreviewWallpaper = view.findViewById(R.id.btnPreviewWallpaper);
         btnOpenMistakeReview = view.findViewById(R.id.btnOpenMistakeReview);
@@ -823,6 +887,26 @@ public class SettingsDialog extends Dialog {
         if (spinnerJeeExamType != null && spinnerJeeExamType.getSelectedItemPosition() == 1) {
             selectedExamType = EXAM_TYPE_JEE_ADVANCED;
         }
+
+        boolean zoneEffectEnabled = (cbZoneClickEffect == null || cbZoneClickEffect.isChecked());
+        final int[] durationValues = {150, 300, 500, 800, 1200};
+        int selectedDuration = 300;
+        if (spinnerClickEffectDuration != null) {
+            int idx = spinnerClickEffectDuration.getSelectedItemPosition();
+            if (idx >= 0 && idx < durationValues.length) {
+                selectedDuration = durationValues[idx];
+            }
+        }
+
+        final String[] styleValues = {EFFECT_STYLE_FADE, EFFECT_STYLE_SCALE, EFFECT_STYLE_POP};
+        String selectedStyle = EFFECT_STYLE_FADE;
+        if (spinnerClickTransition != null) {
+            int idx = spinnerClickTransition.getSelectedItemPosition();
+            if (idx >= 0 && idx < styleValues.length) {
+                selectedStyle = styleValues[idx];
+            }
+        }
+
         boolean autoWallpaper = (cbAutoApplyWallpaper != null && cbAutoApplyWallpaper.isChecked());
 
         final String[] fontValues = {FONT_MONOSPACE, FONT_SANS_SERIF_BOLD, FONT_CONDENSED, FONT_SERIF, FONT_LIGHT};
@@ -879,6 +963,9 @@ public class SettingsDialog extends Dialog {
                 .putInt(KEY_BREAK_MINUTES, breakMins)
                 .putBoolean(KEY_TWO_ZONE_RECORDING, twoZone)
                 .putString(KEY_JEE_EXAM_TYPE, selectedExamType)
+                .putBoolean(KEY_ZONE_EFFECT_ENABLED, zoneEffectEnabled)
+                .putInt(KEY_ZONE_EFFECT_DURATION_MS, selectedDuration)
+                .putString(KEY_ZONE_EFFECT_STYLE, selectedStyle)
                 .putBoolean(KEY_WALLPAPER_AUTO_APPLY, autoWallpaper)
                 .putBoolean(KEY_PIN_ENABLED, cbEnablePinLock.isChecked())
                 .putString(KEY_PIN_CODE, etPrivacyPin.getText().toString().trim())

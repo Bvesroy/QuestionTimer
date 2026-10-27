@@ -28,6 +28,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.view.animation.AccelerateInterpolator;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
@@ -106,6 +107,16 @@ public class MainActivity extends Activity {
     private String currentJeeExamType = SettingsDialog.EXAM_TYPE_JEE_MAIN;
     private final Handler undoBannerHandler = new Handler(Looper.getMainLooper());
     private QuestionLog lastRecordedOutcomeLog = null;
+
+    // Two-Zone Visual Feedback Views & Settings
+    private View viewUpperFeedback;
+    private View viewLowerFeedback;
+    private boolean isZoneEffectEnabled = true;
+    private int zoneEffectDurationMs = 300;
+    private String zoneEffectStyle = SettingsDialog.EFFECT_STYLE_FADE;
+    private float touchDownRawX;
+    private float touchDownRawY;
+    private long touchDownRealtime;
 
     // Explicit Session State Machine concurrency guard
     private final Object stateLock = new Object();
@@ -186,6 +197,9 @@ public class MainActivity extends Activity {
         currentTimerSizeMode = prefs.getString(SettingsDialog.KEY_TIMER_SIZE_MODE, SettingsDialog.SIZE_MEDIUM);
         isTwoZoneRecordingEnabled = prefs.getBoolean(SettingsDialog.KEY_TWO_ZONE_RECORDING, true);
         currentJeeExamType = prefs.getString(SettingsDialog.KEY_JEE_EXAM_TYPE, SettingsDialog.EXAM_TYPE_JEE_MAIN);
+        isZoneEffectEnabled = prefs.getBoolean(SettingsDialog.KEY_ZONE_EFFECT_ENABLED, true);
+        zoneEffectDurationMs = prefs.getInt(SettingsDialog.KEY_ZONE_EFFECT_DURATION_MS, 300);
+        zoneEffectStyle = prefs.getString(SettingsDialog.KEY_ZONE_EFFECT_STYLE, SettingsDialog.EFFECT_STYLE_FADE);
 
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         lastInteractionRealtime = SystemClock.elapsedRealtime();
@@ -298,6 +312,16 @@ public class MainActivity extends Activity {
         btnToggle.setOnClickListener(v -> handleManualToggle());
         btnHistory.setOnClickListener(v -> showHistoryBottomSheet());
         btnSettings.setOnClickListener(v -> showSettingsDialog());
+
+        // Two-Zone Click Feedback Views
+        viewUpperFeedback = findViewById(R.id.viewUpperFeedback);
+        viewLowerFeedback = findViewById(R.id.viewLowerFeedback);
+        if (viewUpperFeedback != null) {
+            viewUpperFeedback.setVisibility(View.GONE);
+        }
+        if (viewLowerFeedback != null) {
+            viewLowerFeedback.setVisibility(View.GONE);
+        }
 
         // Transient Undo Notification Banner
         layoutUndoBanner = findViewById(R.id.layoutUndoBanner);
@@ -552,58 +576,139 @@ public class MainActivity extends Activity {
         }
     }
 
-    /**
-     * Configures the full-screen tap-anywhere gesture loop while ignoring touches on interactive controls.
-     * When RUNNING, the entire screen acts as an instant pause & record tap target.
-     */
-    /**
-     * Configures full-screen tap gesture loop with Two-Zone Answer Recording support.
-     * When Two-Zone Answer Recording is active:
-     * - Screen is split into two equal horizontal zones (integer pixel height / 2).
-     * - Upper zone = INCORRECT, Lower zone = SOLVED (identical AMOLED background, no dividing lines).
-     * - Deliberate taps immediately record authoritative duration, save outcome, and advance to next question
-     *   without resetting continuous Total Study Clock.
-     * - Shows transient Undo notification.
-     * - Prevents unintended answers on controls, rotation, pause, break, or reset.
-     */
-    private void setupGestureDetector() {
-        rootContainer.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                if (isTouchInsideView(topBarContainer, event) ||
-                    isTouchInsideView(bottomControlsContainer, event) ||
-                    isTouchInsideView(tvTotalStudyClock, event) ||
-                    isTouchInsideView(layoutUndoBanner, event)) {
-                    return false;
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                // Ignore touches on interactive top/bottom bars, study clock or undo banner
-                if (isTouchInsideView(topBarContainer, event) ||
-                    isTouchInsideView(bottomControlsContainer, event) ||
-                    isTouchInsideView(tvTotalStudyClock, event) ||
-                    isTouchInsideView(layoutUndoBanner, event)) {
-                    return false;
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        switch (ev.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                touchDownRawX = ev.getRawX();
+                touchDownRawY = ev.getRawY();
+                touchDownRealtime = SystemClock.elapsedRealtime();
+                break;
+
+            case MotionEvent.ACTION_UP:
+                float dx = Math.abs(ev.getRawX() - touchDownRawX);
+                float dy = Math.abs(ev.getRawY() - touchDownRawY);
+                long dt = SystemClock.elapsedRealtime() - touchDownRealtime;
+
+                // Ignore dragging, swiping, or prolonged long-press
+                if (dx > 60f || dy > 60f || dt > 800) {
+                    return super.dispatchTouchEvent(ev);
                 }
 
-                // Two-Zone Answer Recording when timer is actively running
+                // If touch hit a registered interactive control button, let normal click dispatch occur
+                if (isInteractiveControlTouch(ev)) {
+                    return super.dispatchTouchEvent(ev);
+                }
+
+                // Two-Zone Answer Outcome Selection when timer is running
                 if (isTwoZoneRecordingEnabled && currentState.isRunning()) {
-                    int width = Math.max(1, rootContainer.getWidth());
-                    int height = Math.max(1, rootContainer.getHeight());
-                    TwoZoneHitDetector detector = new TwoZoneHitDetector(width, height);
-                    TouchZone zone = detector.detectVerticalZone(event.getX(), event.getY());
-                    if (zone == TouchZone.ZONE_UPPER) {
-                        recordTwoZoneOutcome("WRONG");
-                        return true;
-                    } else if (zone == TouchZone.ZONE_LOWER) {
-                        recordTwoZoneOutcome("RIGHT");
-                        return true;
+                    float midY;
+                    if (rootContainer != null && rootContainer.getHeight() > 0) {
+                        int[] loc = new int[2];
+                        rootContainer.getLocationOnScreen(loc);
+                        midY = loc[1] + (rootContainer.getHeight() / 2.0f);
+                    } else {
+                        midY = getResources().getDisplayMetrics().heightPixels / 2.0f;
                     }
+
+                    boolean isUpper = ev.getRawY() < midY;
+                    triggerZoneClickEffect(isUpper);
+                    recordTwoZoneOutcome(isUpper ? "WRONG" : "RIGHT");
+                    return true;
                 }
 
+                // Standard tap anywhere loop
                 onScreenTapped();
                 return true;
-            }
-            return true;
-        });
+        }
+
+        return super.dispatchTouchEvent(ev);
+    }
+
+    private boolean isInteractiveControlTouch(MotionEvent ev) {
+        return isTouchInsideView(btnDiscard, ev) ||
+               isTouchInsideView(btnToggle, ev) ||
+               isTouchInsideView(btnHistory, ev) ||
+               isTouchInsideView(btnSettings, ev) ||
+               isTouchInsideView(layoutUndoBanner, ev) ||
+               isTouchInsideView(findViewById(R.id.layoutSessionTitle), ev) ||
+               isTouchInsideView(tvTarget, ev) ||
+               isTouchInsideView(tvExamBanner, ev) ||
+               isTouchInsideView(tvTotalStudyClock, ev);
+    }
+
+    private void triggerZoneClickEffect(boolean isUpper) {
+        if (!isZoneEffectEnabled) return;
+        final View targetView = isUpper ? viewUpperFeedback : viewLowerFeedback;
+        final View otherView = isUpper ? viewLowerFeedback : viewUpperFeedback;
+        if (targetView == null) return;
+
+        if (otherView != null) {
+            otherView.animate().cancel();
+            otherView.setVisibility(View.GONE);
+        }
+
+        targetView.animate().cancel();
+        // Upper zone = Vibrant Red (#78FF453A), Lower zone = Vibrant Green (#7830D158)
+        int color = isUpper ? Color.argb(120, 255, 69, 58) : Color.argb(120, 48, 209, 88);
+        targetView.setBackgroundColor(color);
+        targetView.setAlpha(1.0f);
+        targetView.setScaleX(1.0f);
+        targetView.setScaleY(1.0f);
+        targetView.setVisibility(View.VISIBLE);
+
+        long duration = Math.max(100L, zoneEffectDurationMs);
+
+        if (SettingsDialog.EFFECT_STYLE_SCALE.equalsIgnoreCase(zoneEffectStyle)) {
+            targetView.setScaleX(0.94f);
+            targetView.setScaleY(0.94f);
+            targetView.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .alpha(0.0f)
+                    .setDuration(duration)
+                    .setInterpolator(new DecelerateInterpolator())
+                    .withEndAction(() -> {
+                        targetView.setVisibility(View.GONE);
+                        targetView.setAlpha(1.0f);
+                        targetView.setScaleX(1.0f);
+                        targetView.setScaleY(1.0f);
+                    })
+                    .start();
+        } else if (SettingsDialog.EFFECT_STYLE_POP.equalsIgnoreCase(zoneEffectStyle)) {
+            long holdTime = (long) (duration * 0.5f);
+            long fadeTime = duration - holdTime;
+            targetView.animate()
+                    .alpha(0.0f)
+                    .setStartDelay(holdTime)
+                    .setDuration(fadeTime)
+                    .withEndAction(() -> {
+                        targetView.setVisibility(View.GONE);
+                        targetView.setAlpha(1.0f);
+                    })
+                    .start();
+        } else {
+            // Default: FADE_OUT
+            targetView.animate()
+                    .alpha(0.0f)
+                    .setDuration(duration)
+                    .setInterpolator(new AccelerateInterpolator())
+                    .withEndAction(() -> {
+                        targetView.setVisibility(View.GONE);
+                        targetView.setAlpha(1.0f);
+                    })
+                    .start();
+        }
+    }
+
+    /**
+     * Taps are intercepted authority-first via Activity.dispatchTouchEvent()
+     * preventing child views or padding from misclassifying upper/lower zone boundaries.
+     */
+    private void setupGestureDetector() {
+        if (rootContainer != null) {
+            rootContainer.setOnTouchListener(null);
+        }
     }
 
     private boolean isTouchInsideView(View view, MotionEvent event) {
@@ -769,18 +874,26 @@ public class MainActivity extends Activity {
         if (vibrator == null) return;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if ("INCORRECT".equals(outcome)) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 20, 35, 20}, -1));
+                if ("INCORRECT".equalsIgnoreCase(outcome) || "WRONG".equalsIgnoreCase(outcome)) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 25, 40, 25}, -1));
                 } else {
-                    vibrator.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE));
+                    vibrator.vibrate(VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE));
                 }
             } else {
-                vibrator.vibrate(25);
+                vibrator.vibrate(30);
             }
         } catch (Exception ignored) {}
     }
 
     private void startTimer() {
+        if (viewUpperFeedback != null) {
+            viewUpperFeedback.animate().cancel();
+            viewUpperFeedback.setVisibility(View.GONE);
+        }
+        if (viewLowerFeedback != null) {
+            viewLowerFeedback.animate().cancel();
+            viewLowerFeedback.setVisibility(View.GONE);
+        }
         transitionTo(TimerState.RUNNING_QUESTION);
         lastInteractionRealtime = SystemClock.elapsedRealtime();
         continuousRunningStartTime = SystemClock.elapsedRealtime();
@@ -829,6 +942,14 @@ public class MainActivity extends Activity {
     }
 
     private void advanceAndStartNextQuestion() {
+        if (viewUpperFeedback != null) {
+            viewUpperFeedback.animate().cancel();
+            viewUpperFeedback.setVisibility(View.GONE);
+        }
+        if (viewLowerFeedback != null) {
+            viewLowerFeedback.animate().cancel();
+            viewLowerFeedback.setVisibility(View.GONE);
+        }
         // Reset timer duration to 0 and immediately start for next question
         accumulatedElapsedMs = 0L;
         transitionTo(TimerState.RUNNING_QUESTION);
@@ -1377,6 +1498,11 @@ public class MainActivity extends Activity {
 
             @Override
             public void onDisplaySettingsChanged() {
+                SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+                isZoneEffectEnabled = prefs.getBoolean(SettingsDialog.KEY_ZONE_EFFECT_ENABLED, true);
+                zoneEffectDurationMs = prefs.getInt(SettingsDialog.KEY_ZONE_EFFECT_DURATION_MS, 300);
+                zoneEffectStyle = prefs.getString(SettingsDialog.KEY_ZONE_EFFECT_STYLE, SettingsDialog.EFFECT_STYLE_FADE);
+
                 applyTimerFont();
                 applyTimerSize();
                 applyStudyTimerPosition();

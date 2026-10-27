@@ -7,6 +7,34 @@
     android:background="@color/amoled_black"
     android:fitsSystemWindows="false">
 
+    <!-- Two-Zone Visual Feedback Overlays (Red for Upper/Wrong, Green for Lower/Right) -->
+    <LinearLayout
+        android:id="@+id/layoutZoneFeedback"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <View
+            android:id="@+id/viewUpperFeedback"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#00000000"
+            android:clickable="false"
+            android:focusable="false"
+            android:visibility="gone" />
+
+        <View
+            android:id="@+id/viewLowerFeedback"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#00000000"
+            android:clickable="false"
+            android:focusable="false"
+            android:visibility="gone" />
+    </LinearLayout>
+
     <!-- Top Session Header Container (Clickable to rename) -->
     <LinearLayout
         android:id="@+id/topBarContainer"

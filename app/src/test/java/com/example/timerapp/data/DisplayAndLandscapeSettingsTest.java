@@ -176,4 +176,43 @@ public class DisplayAndLandscapeSettingsTest {
         Assert.assertTrue(displaySettings.isShowStatusHints());
         Assert.assertTrue(displaySettings.isExamBannerEnabled());
     }
+
+    // ==========================================
+    // 8. Two-Zone Visual Click Effect Settings
+    // ==========================================
+
+    @Test
+    public void testTwoZoneClickFeedbackSettings_defaultsAndMutations() {
+        Assert.assertEquals("zone_click_effect_enabled", DisplaySettings.KEY_ZONE_EFFECT_ENABLED);
+        Assert.assertEquals("zone_click_effect_duration_ms", DisplaySettings.KEY_ZONE_EFFECT_DURATION_MS);
+        Assert.assertEquals("zone_click_effect_style", DisplaySettings.KEY_ZONE_EFFECT_STYLE);
+
+        // Verify default state: enabled=true, duration=300ms, style=FADE_OUT
+        Assert.assertTrue(displaySettings.isZoneEffectEnabled());
+        Assert.assertEquals(300, displaySettings.getZoneEffectDurationMs());
+        Assert.assertEquals(DisplaySettings.EFFECT_STYLE_FADE, displaySettings.getZoneEffectStyle());
+
+        // Test mutations
+        displaySettings.setZoneEffectEnabled(false);
+        Assert.assertFalse(displaySettings.isZoneEffectEnabled());
+
+        displaySettings.setZoneEffectDurationMs(500);
+        Assert.assertEquals(500, displaySettings.getZoneEffectDurationMs());
+
+        displaySettings.setZoneEffectDurationMs(800);
+        Assert.assertEquals(800, displaySettings.getZoneEffectDurationMs());
+
+        displaySettings.setZoneEffectStyle(DisplaySettings.EFFECT_STYLE_SCALE);
+        Assert.assertEquals("RIPPLE_SCALE", displaySettings.getZoneEffectStyle());
+
+        displaySettings.setZoneEffectStyle(DisplaySettings.EFFECT_STYLE_POP);
+        Assert.assertEquals("INSTANT_POP", displaySettings.getZoneEffectStyle());
+    }
+
+    @Test
+    public void testTwoZoneClickFeedbackStyleConstants() {
+        Assert.assertEquals("FADE_OUT", DisplaySettings.EFFECT_STYLE_FADE);
+        Assert.assertEquals("RIPPLE_SCALE", DisplaySettings.EFFECT_STYLE_SCALE);
+        Assert.assertEquals("INSTANT_POP", DisplaySettings.EFFECT_STYLE_POP);
+    }
 }

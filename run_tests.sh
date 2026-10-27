@@ -77,6 +77,7 @@ echo "=== Compiling unit tests with OpenJDK 17 ==="
 JAVA_SOURCES_FILE="$TEST_OUT/sources.txt"
 find "$DIR/app/src/main/java/com/example/timerapp/data" \
      "$DIR/app/src/main/java/com/example/timerapp/model" \
+     "$DIR/app/src/main/java/com/example/timerapp/wallpaper" \
      "$DIR/app/src/test/java/com/example/timerapp" \
      -name "*.java" > "$JAVA_SOURCES_FILE"
 
@@ -110,6 +111,7 @@ TEST_EXIT_CODE=0
   com.example.timerapp.data.SchemaV4AndSafSettingsTest \
   com.example.timerapp.data.DatabaseV4MigrationAndAuditTest \
   com.example.timerapp.data.OutcomeQuestionTimerAndAnalyticsTest \
+  com.example.timerapp.data.OutcomeTrackingReliabilityTest \
   com.example.timerapp.data.DisplayAndLandscapeSettingsTest || TEST_EXIT_CODE=$?
 
 SWARM_DIR="${SWARM_DIR:-${SWARM_ROOT:-$(cd "$DIR/../Swarm" 2>/dev/null && pwd -P || echo "${HOME:-}/Swarm")}}"

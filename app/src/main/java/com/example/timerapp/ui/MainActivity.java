@@ -10,6 +10,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Build;
@@ -46,6 +47,7 @@ import android.widget.Toast;
 
 import com.example.timerapp.R;
 import com.example.timerapp.data.SessionStorage;
+import com.example.timerapp.data.analytics.OutcomeClassifier;
 import com.example.timerapp.data.backup.SafBackupEngine;
 import com.example.timerapp.data.engine.TwoZoneHitDetector;
 import com.example.timerapp.data.engine.TwoZoneHitDetector.TouchZone;
@@ -73,8 +75,10 @@ import java.util.Locale;
  * 4. Huge tabular monospace timer readout (MM:SS.s or H:MM:SS.s) with dynamic size re-scaling.
  * 5. Fullscreen tap-anywhere gesture loop:
  *      - IDLE -> Tap starts timer
- *      - RUNNING -> Tap pauses timer, records current question duration
- *      - PAUSED -> Tap resets and immediately starts next question (Q1 -> Q2)
+ *      - RUNNING -> Two-Zone: upper half = WRONG, lower half = RIGHT, then pause
+ *                   (tracking off: tap pauses and records the question)
+ *      - PAUSED -> Tap resumes a manually paused question (elapsed preserved);
+ *                  after a recorded outcome, tap resets and starts the next question
  * 6. Auto-hiding control buttons (Play, Discard, History, Settings) during RUNNING state.
  * 7. Hidden popup modal for History, Date-Grouped Sessions, and Dedicated Analytics Dashboard.
  * 8. Configurable target tracking & dynamic font size configuration.
@@ -107,6 +111,12 @@ public class MainActivity extends Activity {
     private String currentJeeExamType = SettingsDialog.EXAM_TYPE_JEE_MAIN;
     private final Handler undoBannerHandler = new Handler(Looper.getMainLooper());
     private QuestionLog lastRecordedOutcomeLog = null;
+    /**
+     * True when the current question was paused by the user (or by a break) without
+     * recording an answer. The next resume must continue the same question with its
+     * preserved elapsed time instead of advancing to a new one.
+     */
+    private boolean manualPauseActive = false;
 
     // Two-Zone Visual Feedback Views & Settings
     private View viewUpperFeedback;
@@ -194,6 +204,16 @@ public class MainActivity extends Activity {
 
         // Load saved timer size preference & Two-Zone Answer setting
         SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+        // Force initialize two-zone outcome tracking and click effects if not previously marked active
+        if (!prefs.getBoolean(SettingsDialog.KEY_TWO_ZONE_INITIALIZED, false)) {
+            prefs.edit()
+                    .putBoolean(SettingsDialog.KEY_TWO_ZONE_RECORDING, true)
+                    .putBoolean(SettingsDialog.KEY_ZONE_EFFECT_ENABLED, true)
+                    .putInt(SettingsDialog.KEY_ZONE_EFFECT_DURATION_MS, 300)
+                    .putString(SettingsDialog.KEY_ZONE_EFFECT_STYLE, SettingsDialog.EFFECT_STYLE_FADE)
+                    .putBoolean(SettingsDialog.KEY_TWO_ZONE_INITIALIZED, true)
+                    .apply();
+        }
         currentTimerSizeMode = prefs.getString(SettingsDialog.KEY_TIMER_SIZE_MODE, SettingsDialog.SIZE_MEDIUM);
         isTwoZoneRecordingEnabled = prefs.getBoolean(SettingsDialog.KEY_TWO_ZONE_RECORDING, true);
         currentJeeExamType = prefs.getString(SettingsDialog.KEY_JEE_EXAM_TYPE, SettingsDialog.EXAM_TYPE_JEE_MAIN);
@@ -316,6 +336,12 @@ public class MainActivity extends Activity {
         // Two-Zone Click Feedback Views
         viewUpperFeedback = findViewById(R.id.viewUpperFeedback);
         viewLowerFeedback = findViewById(R.id.viewLowerFeedback);
+        // Raise the overlay container once; raising an individual weighted child would
+        // reorder it and swap the upper/lower halves.
+        View zoneFeedbackContainer = findViewById(R.id.layoutZoneFeedback);
+        if (zoneFeedbackContainer != null) {
+            zoneFeedbackContainer.bringToFront();
+        }
         if (viewUpperFeedback != null) {
             viewUpperFeedback.setVisibility(View.GONE);
         }
@@ -583,7 +609,16 @@ public class MainActivity extends Activity {
                 touchDownRawX = ev.getRawX();
                 touchDownRawY = ev.getRawY();
                 touchDownRealtime = SystemClock.elapsedRealtime();
-                break;
+
+                // If user touched an interactive utility control, let super dispatch handle it
+                if (isInteractiveControlTouch(ev)) {
+                    return super.dispatchTouchEvent(ev);
+                }
+
+                // For timing zone taps, notify super but return true so the Android
+                // input manager guarantees that ACTION_UP is delivered to this Activity!
+                super.dispatchTouchEvent(ev);
+                return true;
 
             case MotionEvent.ACTION_UP:
                 float dx = Math.abs(ev.getRawX() - touchDownRawX);
@@ -600,7 +635,7 @@ public class MainActivity extends Activity {
                     return super.dispatchTouchEvent(ev);
                 }
 
-                // Two-Zone Answer Outcome Selection when timer is running
+                // Two-Zone Answer Outcome Selection when tracking is enabled and timer is running
                 if (isTwoZoneRecordingEnabled && currentState.isRunning()) {
                     float midY;
                     if (rootContainer != null && rootContainer.getHeight() > 0) {
@@ -617,7 +652,7 @@ public class MainActivity extends Activity {
                     return true;
                 }
 
-                // Standard tap anywhere loop
+                // Standard tap anywhere loop (IDLE -> start, PAUSED -> advance to next question)
                 onScreenTapped();
                 return true;
         }
@@ -626,6 +661,21 @@ public class MainActivity extends Activity {
     }
 
     private boolean isInteractiveControlTouch(MotionEvent ev) {
+        // While timer is actively running, tapping anywhere in the upper or lower half
+        // must pause and record outcome. Only bottom utility buttons and active undo banner take precedence.
+        if (currentState.isRunning()) {
+            return isTouchInsideView(btnSettings, ev) ||
+                   isTouchInsideView(btnHistory, ev) ||
+                   isTouchInsideView(btnDiscard, ev) ||
+                   isTouchInsideView(btnToggle, ev) ||
+                   isTouchInsideView(layoutUndoBanner, ev) ||
+                   isTouchInsideView(findViewById(R.id.layoutSessionTitle), ev) ||
+                   isTouchInsideView(tvTarget, ev) ||
+                   isTouchInsideView(tvExamBanner, ev) ||
+                   isTouchInsideView(tvTotalStudyClock, ev);
+        }
+
+        // When paused or idle, allow tapping title or target to configure them
         return isTouchInsideView(btnDiscard, ev) ||
                isTouchInsideView(btnToggle, ev) ||
                isTouchInsideView(btnHistory, ev) ||
@@ -649,19 +699,28 @@ public class MainActivity extends Activity {
         }
 
         targetView.animate().cancel();
-        // Upper zone = Vibrant Red (#78FF453A), Lower zone = Vibrant Green (#7830D158)
-        int color = isUpper ? Color.argb(120, 255, 69, 58) : Color.argb(120, 48, 209, 88);
-        targetView.setBackgroundColor(color);
+        // Upper zone = Vibrant Red (#90FF453A), Lower zone = Vibrant Green (#9030D158)
+        // Rich gradient from 160 alpha to 110 alpha across the entire half screen for striking feedback
+        int startColor = isUpper ? Color.argb(160, 255, 69, 58) : Color.argb(160, 48, 209, 88);
+        int endColor = isUpper ? Color.argb(110, 255, 69, 58) : Color.argb(110, 48, 209, 88);
+        GradientDrawable zoneGradient = new GradientDrawable(
+                isUpper ? GradientDrawable.Orientation.TOP_BOTTOM : GradientDrawable.Orientation.BOTTOM_TOP,
+                new int[]{startColor, endColor});
+        zoneGradient.setShape(GradientDrawable.RECTANGLE);
+        targetView.setBackground(zoneGradient);
         targetView.setAlpha(1.0f);
         targetView.setScaleX(1.0f);
         targetView.setScaleY(1.0f);
+        // Do NOT bring the weighted child itself to front: LinearLayout reorders
+        // children, which swaps the upper/lower halves. The parent overlay container
+        // is raised once in initViews() instead.
         targetView.setVisibility(View.VISIBLE);
 
-        long duration = Math.max(100L, zoneEffectDurationMs);
+        long duration = Math.max(120L, zoneEffectDurationMs);
 
         if (SettingsDialog.EFFECT_STYLE_SCALE.equalsIgnoreCase(zoneEffectStyle)) {
-            targetView.setScaleX(0.94f);
-            targetView.setScaleY(0.94f);
+            targetView.setScaleX(0.92f);
+            targetView.setScaleY(0.92f);
             targetView.animate()
                     .scaleX(1.0f)
                     .scaleY(1.0f)
@@ -699,6 +758,22 @@ public class MainActivity extends Activity {
                     })
                     .start();
         }
+    }
+
+    public void previewZoneClickEffect(boolean isUpper, int durationMs, String style) {
+        boolean prevEnabled = isZoneEffectEnabled;
+        int prevDur = zoneEffectDurationMs;
+        String prevStyle = zoneEffectStyle;
+
+        isZoneEffectEnabled = true;
+        zoneEffectDurationMs = durationMs;
+        zoneEffectStyle = style;
+
+        triggerZoneClickEffect(isUpper);
+
+        zoneEffectDurationMs = prevDur;
+        zoneEffectStyle = prevStyle;
+        isZoneEffectEnabled = prevEnabled;
     }
 
     /**
@@ -739,8 +814,8 @@ public class MainActivity extends Activity {
     /**
      * Tap anywhere gesture loop:
      * - IDLE / READY -> Tap starts timer
-     * - RUNNING -> Tap pauses timer, records current question duration
-     * - PAUSED -> Tap resets and immediately starts timer for next question (e.g. Q1 -> Q2)
+     * - RUNNING -> Tap pauses timer and records current question duration
+     * - PAUSED -> Tap resumes a manual pause, or starts the next question after an outcome
      */
     private void onScreenTapped() {
         long now = SystemClock.elapsedRealtime();
@@ -751,12 +826,21 @@ public class MainActivity extends Activity {
         hasShownIdleToast = false;
         triggerTapFeedback();
 
+        if (isBreakActive) {
+            showBreakActiveToast();
+            return;
+        }
+
         if (currentState == TimerState.IDLE) {
             startTimer();
         } else if (currentState.isRunning()) {
             pauseAndRecordQuestion();
         } else if (currentState.isPaused()) {
-            advanceAndStartNextQuestion();
+            if (manualPauseActive) {
+                resumeCurrentQuestion();
+            } else {
+                advanceAndStartNextQuestion();
+            }
         } else if (currentState == TimerState.SESSION_ENDED) {
             createNewSession();
         }
@@ -768,6 +852,10 @@ public class MainActivity extends Activity {
      * resets active question clock to 0, preserves Total Study Clock without reset, and shows transient Undo control.
      */
     private void recordTwoZoneOutcome(String outcome) {
+        // Defense in depth: no outcome may be written while optional tracking is disabled.
+        if (!isTwoZoneRecordingEnabled) {
+            return;
+        }
         if (!transitionTo(TimerState.RECORDING_OUTCOME)) {
             return;
         }
@@ -780,7 +868,7 @@ public class MainActivity extends Activity {
 
         int currentQNum = (currentSession != null) ? currentSession.getCurrentQuestion() : 1;
         long sessId = (currentSession != null) ? currentSession.getId() : 1L;
-        boolean isWrong = "INCORRECT".equalsIgnoreCase(outcome) || "WRONG".equalsIgnoreCase(outcome);
+        boolean isWrong = OutcomeClassifier.isWrong(outcome);
         QuestionLog log = new QuestionLog(
                 System.currentTimeMillis(),
                 sessId,
@@ -826,7 +914,7 @@ public class MainActivity extends Activity {
         if (layoutUndoBanner == null || tvUndoMessage == null) return;
 
         undoBannerHandler.removeCallbacksAndMessages(null);
-        boolean isIncorrect = "INCORRECT".equals(log.getOutcome()) || "WRONG".equals(log.getOutcome());
+        boolean isIncorrect = OutcomeClassifier.isWrong(log.getOutcome());
         double penalty = "JEE_ADVANCED".equalsIgnoreCase(currentJeeExamType) ? 2.0 : 1.0;
         String markStr = isIncorrect ? ("-" + (int) penalty + " PTS") : "+4 PTS";
         String outcomeStr = isIncorrect ? "WRONG" : "RIGHT";
@@ -860,8 +948,9 @@ public class MainActivity extends Activity {
 
         if (removed != null) {
             accumulatedElapsedMs = removed.getDurationMs();
-            List<QuestionLog> remainingLogs = currentSession.getLogs();
-            lastRecordedOutcomeLog = remainingLogs.isEmpty() ? null : remainingLogs.get(remainingLogs.size() - 1);
+            // After undo the next tap starts the restored question fresh; never show the
+            // previous question's outcome/delta as if it belonged to the undone one.
+            lastRecordedOutcomeLog = null;
             Toast.makeText(this, "Undid Question #" + removed.getQuestionNumber() + " (" + removed.getOutcome() + ")", Toast.LENGTH_SHORT).show();
         }
         renderUi();
@@ -874,7 +963,7 @@ public class MainActivity extends Activity {
         if (vibrator == null) return;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if ("INCORRECT".equalsIgnoreCase(outcome) || "WRONG".equalsIgnoreCase(outcome)) {
+                if (OutcomeClassifier.isWrong(outcome)) {
                     vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 25, 40, 25}, -1));
                 } else {
                     vibrator.vibrate(VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE));
@@ -886,6 +975,8 @@ public class MainActivity extends Activity {
     }
 
     private void startTimer() {
+        manualPauseActive = false;
+        lastRecordedOutcomeLog = null;
         if (viewUpperFeedback != null) {
             viewUpperFeedback.animate().cancel();
             viewUpperFeedback.setVisibility(View.GONE);
@@ -909,6 +1000,13 @@ public class MainActivity extends Activity {
     }
 
     private void pauseAndRecordQuestion() {
+        if (isTwoZoneRecordingEnabled) {
+            // Two-Zone mode: pausing is not an answer. Only tapping the upper (WRONG)
+            // or lower (RIGHT) half may create a log or advance the question counter.
+            pauseTimerForManualResume();
+            return;
+        }
+
         transitionTo(TimerState.PAUSED);
         continuousRunningStartTime = 0L;
         timerHandler.removeCallbacks(timerTicker);
@@ -941,7 +1039,62 @@ public class MainActivity extends Activity {
         }
     }
 
+    /**
+     * Pauses the current question without recording an answer or advancing the question
+     * counter. Elapsed time is preserved so {@link #resumeCurrentQuestion()} continues the
+     * same question exactly where it stopped.
+     */
+    private void pauseTimerForManualResume() {
+        long elapsedMs = accumulatedElapsedMs;
+        if (currentState.isRunning() && startTimeRealtime > 0) {
+            elapsedMs = SystemClock.elapsedRealtime() - startTimeRealtime;
+        }
+
+        transitionTo(TimerState.PAUSED);
+        continuousRunningStartTime = 0L;
+        timerHandler.removeCallbacks(timerTicker);
+        accumulatedElapsedMs = Math.max(0L, elapsedMs);
+        manualPauseActive = true;
+        // A manual pause is not an answer: drop any outcome badge left by a prior question.
+        lastRecordedOutcomeLog = null;
+
+        updateWidgets();
+        renderUi();
+        triggerEndTimerEffects();
+    }
+
+    /**
+     * Resumes the manually paused question with its preserved elapsed time instead of
+     * resetting the clock and moving to a fresh question.
+     */
+    private void resumeCurrentQuestion() {
+        if (viewUpperFeedback != null) {
+            viewUpperFeedback.animate().cancel();
+            viewUpperFeedback.setVisibility(View.GONE);
+        }
+        if (viewLowerFeedback != null) {
+            viewLowerFeedback.animate().cancel();
+            viewLowerFeedback.setVisibility(View.GONE);
+        }
+
+        manualPauseActive = false;
+        transitionTo(TimerState.RUNNING_QUESTION);
+        lastInteractionRealtime = SystemClock.elapsedRealtime();
+        continuousRunningStartTime = SystemClock.elapsedRealtime();
+        if (sessionStudyStartRealtime == 0L && !isBreakActive) {
+            sessionStudyStartRealtime = SystemClock.elapsedRealtime();
+        }
+        hasShownIdleToast = false;
+        hasShownBreakToast = false;
+        startTimeRealtime = SystemClock.elapsedRealtime() - accumulatedElapsedMs;
+        timerHandler.post(timerTicker);
+        updateWidgets();
+        renderUi();
+    }
+
     private void advanceAndStartNextQuestion() {
+        manualPauseActive = false;
+        lastRecordedOutcomeLog = null;
         if (viewUpperFeedback != null) {
             viewUpperFeedback.animate().cancel();
             viewUpperFeedback.setVisibility(View.GONE);
@@ -969,13 +1122,25 @@ public class MainActivity extends Activity {
     private void handleManualToggle() {
         triggerTapFeedback();
         lastInteractionRealtime = SystemClock.elapsedRealtime();
+        if (isBreakActive) {
+            showBreakActiveToast();
+            return;
+        }
         if (currentState.isRunning()) {
             pauseAndRecordQuestion();
         } else if (currentState == TimerState.PAUSED) {
-            advanceAndStartNextQuestion();
+            if (manualPauseActive) {
+                resumeCurrentQuestion();
+            } else {
+                advanceAndStartNextQuestion();
+            }
         } else {
             startTimer();
         }
+    }
+
+    private void showBreakActiveToast() {
+        Toast.makeText(this, "Break in progress — end it from the study clock.", Toast.LENGTH_SHORT).show();
     }
 
     private void handleStudyClockClick() {
@@ -1023,7 +1188,8 @@ public class MainActivity extends Activity {
     private void startBreak() {
         if (isBreakActive) return;
         if (currentState.isRunning()) {
-            pauseAndRecordQuestion();
+            // Preserve the running question's elapsed time; a break is not an answer.
+            pauseTimerForManualResume();
         }
         if (sessionStudyStartRealtime > 0) {
             accumulatedStudyDurationMs += (SystemClock.elapsedRealtime() - sessionStudyStartRealtime);
@@ -1315,7 +1481,7 @@ public class MainActivity extends Activity {
             case RUNNING:
             case RUNNING_QUESTION:
                 if (isTwoZoneRecordingEnabled) {
-                    tvStateBadge.setText("UPPER=WRONG • LOWER=RIGHT");
+                    tvStateBadge.setText("↑ WRONG   ·   ↓ RIGHT");
                 } else {
                     tvStateBadge.setText(R.string.badge_running);
                 }
@@ -1325,8 +1491,16 @@ public class MainActivity extends Activity {
                 btnToggle.setColorFilter(accentColor);
                 break;
             case PAUSED:
-                if (isTwoZoneRecordingEnabled && lastRecordedOutcomeLog != null) {
-                    boolean isWrong = "INCORRECT".equals(lastRecordedOutcomeLog.getOutcome()) || "WRONG".equals(lastRecordedOutcomeLog.getOutcome());
+                if (manualPauseActive) {
+                    // Manual pause: never surface a previous question's outcome or score delta.
+                    tvStateBadge.setText(isBreakActive
+                            ? "ON BREAK • END FROM STUDY CLOCK"
+                            : "PAUSED • TAP TO RESUME");
+                    tvStateBadge.setBackgroundResource(R.drawable.bg_pill_orange);
+                    tvStateBadge.setTextColor(Color.parseColor("#FF9F0A"));
+                } else if (isTwoZoneRecordingEnabled && lastRecordedOutcomeLog != null
+                        && OutcomeClassifier.isAttempted(lastRecordedOutcomeLog.getOutcome())) {
+                    boolean isWrong = OutcomeClassifier.isWrong(lastRecordedOutcomeLog.getOutcome());
                     double penalty = "JEE_ADVANCED".equalsIgnoreCase(currentJeeExamType) ? 2.0 : 1.0;
                     String scoreDelta = isWrong ? ("-" + (int) penalty) : "+4";
                     String outcomeLabel = isWrong ? "WRONG" : "RIGHT";
@@ -1508,6 +1682,11 @@ public class MainActivity extends Activity {
                 applyStudyTimerPosition();
                 updateExamBanner();
                 renderUi();
+            }
+
+            @Override
+            public void onPreviewZoneClickEffect(boolean isUpper, int durationMs, String style) {
+                previewZoneClickEffect(isUpper, durationMs, style);
             }
         });
         dialog.show();
@@ -1877,6 +2056,7 @@ public class MainActivity extends Activity {
         outState.putLong("BREAK_ACCUMULATED_MS", accumulatedBreakDurationMs);
         outState.putLong("LAST_DISCARDED_MS", lastDiscardedQuestionElapsedMs);
         outState.putBoolean("CAN_UNDO_RESET", canUndoReset);
+        outState.putBoolean("MANUAL_PAUSE_ACTIVE", manualPauseActive);
     }
 
     @Override
@@ -1894,8 +2074,11 @@ public class MainActivity extends Activity {
         accumulatedBreakDurationMs = savedInstanceState.getLong("BREAK_ACCUMULATED_MS", 0L);
         lastDiscardedQuestionElapsedMs = savedInstanceState.getLong("LAST_DISCARDED_MS", 0L);
         canUndoReset = savedInstanceState.getBoolean("CAN_UNDO_RESET", false);
+        manualPauseActive = savedInstanceState.getBoolean("MANUAL_PAUSE_ACTIVE", false);
 
         if (currentState.isRunning()) {
+            // A running timer cannot be in a manually-paused state; drop any stale flag.
+            manualPauseActive = false;
             startTimeRealtime = SystemClock.elapsedRealtime() - accumulatedElapsedMs;
             timerHandler.post(timerTicker);
         }
@@ -2097,18 +2280,23 @@ public class MainActivity extends Activity {
             }
             int completedCount = 0;
             int correctCount = 0;
+            int attemptedCount = 0;
             if (currentSession != null) {
                 List<QuestionLog> logs = currentSession.getLogs();
                 if (logs != null) {
                     completedCount = logs.size();
                     for (QuestionLog log : logs) {
-                        if ("CORRECT".equalsIgnoreCase(log.getOutcome())) {
-                            correctCount++;
+                        String outcome = log.getOutcome();
+                        if (OutcomeClassifier.isAttempted(outcome)) {
+                            attemptedCount++;
+                            if (OutcomeClassifier.isCorrect(outcome)) {
+                                correctCount++;
+                            }
                         }
                     }
                 }
             }
-            int accuracyPct = completedCount > 0 ? (int) Math.round((correctCount * 100.0) / completedCount) : 0;
+            int accuracyPct = attemptedCount > 0 ? (int) Math.round((correctCount * 100.0) / attemptedCount) : 0;
             int streakDays = 1;
             WidgetUpdateHelper.updateAllWidgets(
                     this,

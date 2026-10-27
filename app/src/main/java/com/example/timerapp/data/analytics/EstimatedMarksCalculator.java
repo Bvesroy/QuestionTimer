@@ -289,13 +289,19 @@ public class EstimatedMarksCalculator implements Serializable {
         long wrongMs = 0L;
         if (logs != null) {
             for (com.example.timerapp.model.QuestionLog log : logs) {
+                // Outcome synonyms (RIGHT/WRONG vs CORRECT/SOLVED/INCORRECT) are centralized here.
+                // Unattempted outcomes (null, blank, PAUSED, SKIPPED, REVISED, ...) are ignored entirely so
+                // they cannot inflate total solving time or the derived average pace.
+                String outcome = log.getOutcome();
+                if (!OutcomeClassifier.isAttempted(outcome)) {
+                    continue;
+                }
                 long dur = log.getDurationMs();
                 totalMs += dur;
-                String outcome = (log.getOutcome() != null) ? log.getOutcome().trim().toUpperCase(java.util.Locale.ROOT) : "";
-                if ("CORRECT".equals(outcome) || "SOLVED".equals(outcome) || "RIGHT".equals(outcome)) {
+                if (OutcomeClassifier.isCorrect(outcome)) {
                     correct++;
                     correctMs += dur;
-                } else if ("INCORRECT".equals(outcome) || "WRONG".equals(outcome)) {
+                } else {
                     wrong++;
                     wrongMs += dur;
                 }

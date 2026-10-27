@@ -338,8 +338,8 @@ public final class StudyCoachEngine {
 
         List<QuestionLog> evaluated = new ArrayList<>();
         for (QuestionLog q : logs) {
-            String outcome = q.getOutcome().toUpperCase(Locale.ROOT);
-            if (outcome.contains("CORRECT") || outcome.contains("SOLVED") || outcome.contains("INCORRECT") || outcome.contains("WRONG")) {
+            // Includes the two-zone RIGHT/WRONG vocabulary via the shared classifier.
+            if (OutcomeClassifier.isAttempted(q.getOutcome())) {
                 evaluated.add(q);
             }
         }
@@ -668,12 +668,12 @@ public final class StudyCoachEngine {
                         questionsExceedingTarget++;
                     }
 
-                    String outcome = q.getOutcome().toUpperCase(Locale.ROOT);
-                    if (outcome.contains("CORRECT") || outcome.contains("SOLVED")) {
+                    String outcome = q.getOutcome();
+                    if (OutcomeClassifier.isCorrect(outcome)) {
                         correct++;
-                    } else if (outcome.contains("INCORRECT") || outcome.contains("WRONG")) {
+                    } else if (OutcomeClassifier.isWrong(outcome)) {
                         incorrect++;
-                    } else if (outcome.contains("SKIP")) {
+                    } else if (outcome != null && outcome.toUpperCase(Locale.ROOT).contains("SKIP")) {
                         skipped++;
                     } else {
                         correct++;
@@ -723,8 +723,7 @@ public final class StudyCoachEngine {
     }
 
     private static boolean isIncorrect(QuestionLog q) {
-        String outcome = q.getOutcome().toUpperCase(Locale.ROOT);
-        return outcome.contains("INCORRECT") || outcome.contains("WRONG") ||
+        return OutcomeClassifier.isWrong(q.getOutcome()) ||
                 (q.getMistakeTag() != null && !q.getMistakeTag().trim().isEmpty());
     }
 }

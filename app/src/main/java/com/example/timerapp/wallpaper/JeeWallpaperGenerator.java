@@ -15,6 +15,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
 
+import com.example.timerapp.data.analytics.OutcomeClassifier;
 import com.example.timerapp.model.QuestionLog;
 import com.example.timerapp.model.TimerSession;
 
@@ -84,10 +85,10 @@ public class JeeWallpaperGenerator {
                     m.totalStudyDurationMs += s.getTotalStudyDurationMs() > 0 ? s.getTotalStudyDurationMs() : s.getTotalDurationMs();
                     for (QuestionLog q : s.getLogs()) {
                         m.totalQuestions++;
-                        String out = (q.getOutcome() != null) ? q.getOutcome().toUpperCase(Locale.ROOT) : "SOLVED";
-                        if ("SOLVED".equals(out) || "CORRECT".equals(out)) {
+                        String out = q.getOutcome();
+                        if (OutcomeClassifier.isCorrect(out)) {
                             m.solvedCorrect++;
-                        } else if ("INCORRECT".equals(out)) {
+                        } else if (OutcomeClassifier.isWrong(out)) {
                             m.solvedIncorrect++;
                         }
                     }
@@ -95,9 +96,14 @@ public class JeeWallpaperGenerator {
             }
 
             if (m.totalQuestions > 0) {
-                m.accuracyPercentage = (int) Math.round((m.solvedCorrect * 100.0) / m.totalQuestions);
+                int attempted = m.solvedCorrect + m.solvedIncorrect;
+                m.accuracyPercentage = (attempted > 0)
+                        ? (int) Math.round((m.solvedCorrect * 100.0) / attempted)
+                        : 0;
                 long totalSec = m.totalStudyDurationMs / 1000L;
-                m.avgSecondsPerQuestion = (double) totalSec / m.totalQuestions;
+                m.avgSecondsPerQuestion = (attempted > 0)
+                        ? (double) totalSec / attempted
+                        : 0;
             } else {
                 m.accuracyPercentage = 100;
                 m.avgSecondsPerQuestion = 0;

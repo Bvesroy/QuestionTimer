@@ -54,9 +54,11 @@ public class SettingsDialog extends Dialog {
         default void onBackupNowRequested() {}
         default void onRestoreBackupRequested() {}
         default void onDisplaySettingsChanged() {}
+        default void onPreviewZoneClickEffect(boolean isUpper, int durationMs, String style) {}
     }
 
     public static final String PREFS_NAME = "question_timer_prefs";
+    public static final String KEY_TWO_ZONE_INITIALIZED = "two_zone_initialized_v21";
     public static final String KEY_TIMER_SIZE_MODE = "timer_size_mode";
     public static final String KEY_TARGET_SEC_PER_Q = "target_sec_per_q";
     public static final String KEY_TARGET_SESSION_MIN = "target_session_min";
@@ -182,6 +184,7 @@ public class SettingsDialog extends Dialog {
     private CheckBox cbZoneClickEffect;
     private View layoutZoneClickEffectOptions;
     private Spinner spinnerClickEffectDuration, spinnerClickTransition;
+    private Button btnTestUpperWrong, btnTestLowerRight;
     private Button btnPreviewWallpaper, btnOpenMistakeReview;
     private Spinner spinnerIdleDetection, spinnerBreakReminder;
     private Spinner spinnerJeeExamType;
@@ -607,6 +610,39 @@ public class SettingsDialog extends Dialog {
                 if (layoutZoneClickEffectOptions != null) {
                     layoutZoneClickEffectOptions.setVisibility(isChecked ? View.VISIBLE : View.GONE);
                 }
+            });
+        }
+
+        btnTestUpperWrong = view.findViewById(R.id.btnTestUpperWrong);
+        btnTestLowerRight = view.findViewById(R.id.btnTestLowerRight);
+
+        if (btnTestUpperWrong != null) {
+            btnTestUpperWrong.setOnClickListener(v -> {
+                int dur = 300;
+                int pos = spinnerClickEffectDuration != null ? spinnerClickEffectDuration.getSelectedItemPosition() : 1;
+                if (pos >= 0 && pos < durationValues.length) dur = durationValues[pos];
+                String style = EFFECT_STYLE_FADE;
+                int sPos = spinnerClickTransition != null ? spinnerClickTransition.getSelectedItemPosition() : 0;
+                if (sPos >= 0 && sPos < styleValues.length) style = styleValues[sPos];
+                if (listener != null) {
+                    listener.onPreviewZoneClickEffect(true, dur, style);
+                }
+                Toast.makeText(getContext(), "Testing Upper Zone (RED / WRONG) • " + dur + "ms " + style, Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        if (btnTestLowerRight != null) {
+            btnTestLowerRight.setOnClickListener(v -> {
+                int dur = 300;
+                int pos = spinnerClickEffectDuration != null ? spinnerClickEffectDuration.getSelectedItemPosition() : 1;
+                if (pos >= 0 && pos < durationValues.length) dur = durationValues[pos];
+                String style = EFFECT_STYLE_FADE;
+                int sPos = spinnerClickTransition != null ? spinnerClickTransition.getSelectedItemPosition() : 0;
+                if (sPos >= 0 && sPos < styleValues.length) style = styleValues[sPos];
+                if (listener != null) {
+                    listener.onPreviewZoneClickEffect(false, dur, style);
+                }
+                Toast.makeText(getContext(), "Testing Lower Zone (GREEN / RIGHT) • " + dur + "ms " + style, Toast.LENGTH_SHORT).show();
             });
         }
 

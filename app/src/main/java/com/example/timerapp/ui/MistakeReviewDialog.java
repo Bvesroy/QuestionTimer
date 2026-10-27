@@ -21,6 +21,7 @@ import android.widget.Toast;
 
 import com.example.timerapp.R;
 import com.example.timerapp.data.SessionStorage;
+import com.example.timerapp.data.analytics.OutcomeClassifier;
 import com.example.timerapp.model.QuestionLog;
 import com.example.timerapp.model.TimerSession;
 
@@ -299,7 +300,7 @@ public class MistakeReviewDialog extends Dialog {
 
             String outcome = (log.getOutcome() != null && !log.getOutcome().isEmpty()) ? log.getOutcome().toUpperCase(Locale.ROOT) : "SOLVED";
             tvOutcome.setText(outcome);
-            if ("INCORRECT".equals(outcome)) {
+            if (OutcomeClassifier.isWrong(outcome)) {
                 tvOutcome.setTextColor(Color.parseColor("#FF453A")); // Red
             } else if ("REVISED".equals(outcome)) {
                 tvOutcome.setTextColor(Color.parseColor("#30D158")); // Green
@@ -328,7 +329,15 @@ public class MistakeReviewDialog extends Dialog {
             boolean isRevised = "REVISED".equals(outcome);
             btnToggleRevised.setText(isRevised ? "UNMARK" : "MARK REVISED");
             btnToggleRevised.setOnClickListener(v -> {
-                String newOutcome = isRevised ? "INCORRECT" : "REVISED";
+                String newOutcome;
+                if (isRevised) {
+                    String original = log.getOriginalOutcome();
+                    newOutcome = OutcomeClassifier.isAttempted(original)
+                            ? original.trim()
+                            : "INCORRECT";
+                } else {
+                    newOutcome = "REVISED";
+                }
                 QuestionLog updated = log.withTags(newOutcome, log.getDifficulty(), log.getConfidence(), log.getMistakeTag(), log.getNotes());
                 item.session.replaceLog(item.logIndex, updated);
                 if (sessionStorage != null) {

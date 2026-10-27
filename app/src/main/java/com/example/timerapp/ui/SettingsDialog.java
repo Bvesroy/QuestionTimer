@@ -382,7 +382,7 @@ public class SettingsDialog extends Dialog {
         btnOpenMistakeReview = view.findViewById(R.id.btnOpenMistakeReview);
 
         if (cbTwoZoneAnswer != null) {
-            boolean twoZoneActive = prefs.getBoolean(KEY_TWO_ZONE_RECORDING, false);
+            boolean twoZoneActive = prefs.getBoolean(KEY_TWO_ZONE_RECORDING, true);
             cbTwoZoneAnswer.setChecked(twoZoneActive);
             if (layoutJeeExamType != null) {
                 layoutJeeExamType.setVisibility(twoZoneActive ? View.VISIBLE : View.GONE);

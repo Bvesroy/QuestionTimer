@@ -213,8 +213,8 @@ public class MistakeReviewDialog extends Dialog {
                 String outcome = (log.getOutcome() != null) ? log.getOutcome().toUpperCase(Locale.ROOT) : "SOLVED";
                 String tag = (log.getMistakeTag() != null) ? log.getMistakeTag().toUpperCase(Locale.ROOT) : "";
 
-                // We prioritize items with INCORRECT outcome or explicit mistake tags
-                boolean isMistake = "INCORRECT".equals(outcome) || !tag.isEmpty();
+                // We prioritize items with INCORRECT/WRONG outcome or explicit mistake tags
+                boolean isMistake = "INCORRECT".equals(outcome) || "WRONG".equals(outcome) || !tag.isEmpty();
                 if (!isMistake && "ALL".equals(selectedMistakeTag)) {
                     // Only show questions marked incorrect or tagged as mistakes
                     continue;

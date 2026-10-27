@@ -217,6 +217,12 @@ public class OutcomeQuestionTimerAndAnalyticsTest {
         Assert.assertEquals(10.0, mainAnalytics.estimatedScore, 0.001);
         Assert.assertEquals(2.0, mainAnalytics.negativePenalty, 0.001);
         Assert.assertTrue(mainAnalytics.paceWithinTarget); // 80s < 144s target pace
+        // Incorrect timing analytics: 120s + 100s = 220s
+        Assert.assertEquals(220000L, mainAnalytics.incorrectSolvingTimeMs);
+        Assert.assertEquals(110.0, mainAnalytics.averageIncorrectSolvingTimeSeconds, 0.001);
+        // Correct timing analytics: 50s + 70s + 60s = 180s
+        Assert.assertEquals(180000L, mainAnalytics.correctSolvingTimeMs);
+        Assert.assertEquals(60.0, mainAnalytics.averageCorrectSolvingTimeSeconds, 0.001);
 
         // Analytics for JEE Advanced
         PerformanceAnalytics advAnalytics = EstimatedMarksCalculator.computeAnalytics(
@@ -226,6 +232,8 @@ public class OutcomeQuestionTimerAndAnalyticsTest {
         Assert.assertEquals(8.0, advAnalytics.estimatedScore, 0.001);
         Assert.assertEquals(4.0, advAnalytics.negativePenalty, 0.001);
         Assert.assertTrue(advAnalytics.paceWithinTarget); // 80s < 180s target pace
+        Assert.assertEquals(220000L, advAnalytics.incorrectSolvingTimeMs);
+        Assert.assertEquals(110.0, advAnalytics.averageIncorrectSolvingTimeSeconds, 0.001);
 
         // Summary string format verification
         String formatted = mainAnalytics.getFormattedSummary();
@@ -233,6 +241,7 @@ public class OutcomeQuestionTimerAndAnalyticsTest {
         Assert.assertTrue(formatted.contains("3C 2W"));
         Assert.assertTrue(formatted.contains("+10 PTS"));
         Assert.assertTrue(formatted.contains("80s"));
+        Assert.assertTrue(formatted.contains("Right") && formatted.contains("Wrong"));
     }
 
     // ==========================================
@@ -258,5 +267,45 @@ public class OutcomeQuestionTimerAndAnalyticsTest {
         Assert.assertEquals(2, session.getCurrentQuestion());
         Assert.assertEquals(1, session.getCompletedCount());
         Assert.assertEquals(35000L, session.getTotalDurationMs());
+    }
+
+    @Test
+    public void testTwoZoneTapOutcomeTagging_rightAndWrongWithTimings() {
+        TimerSession s = new TimerSession(200L, "JEE DRILL", 10);
+
+        // Q1: User taps lower half -> Marked RIGHT, paused at 40s
+        QuestionLog q1 = new QuestionLog(1L, s.getId(), 1, 40000L, System.currentTimeMillis(),
+                "", "Physics", "EASY", "RIGHT", 3, "", "");
+        s.addLog(q1);
+
+        // Q2: User taps upper half -> Marked WRONG, paused at 90s
+        QuestionLog q2 = new QuestionLog(2L, s.getId(), 2, 90000L, System.currentTimeMillis(),
+                "", "Physics", "HARD", "WRONG", 2, "CALC_ERROR", "");
+        s.addLog(q2);
+
+        // Q3: User taps lower half -> Marked RIGHT, paused at 50s
+        QuestionLog q3 = new QuestionLog(3L, s.getId(), 3, 50000L, System.currentTimeMillis(),
+                "", "Physics", "MEDIUM", "RIGHT", 3, "", "");
+        s.addLog(q3);
+
+        Assert.assertEquals(3, s.getCompletedCount());
+        Assert.assertEquals("RIGHT", s.getLogs().get(0).getOutcome());
+        Assert.assertEquals("WRONG", s.getLogs().get(1).getOutcome());
+        Assert.assertEquals("RIGHT", s.getLogs().get(2).getOutcome());
+
+        // Verify analytics calculation
+        PerformanceAnalytics analytics = EstimatedMarksCalculator.computeAnalytics(
+                EstimatedMarksCalculator.EXAM_JEE_MAIN, s.getLogs(), 10
+        );
+        Assert.assertEquals(2, analytics.correctCount);
+        Assert.assertEquals(1, analytics.wrongCount);
+        // Estimated score: (2 * 4) - (1 * 1) = 7 marks
+        Assert.assertEquals(7.0, analytics.estimatedScore, 0.001);
+        // Timing breakdown: 90s spent on wrong answers
+        Assert.assertEquals(90000L, analytics.incorrectSolvingTimeMs);
+        Assert.assertEquals(90.0, analytics.averageIncorrectSolvingTimeSeconds, 0.001);
+        // Correct time: (40 + 50) = 90s / 2 = 45s
+        Assert.assertEquals(90000L, analytics.correctSolvingTimeMs);
+        Assert.assertEquals(45.0, analytics.averageCorrectSolvingTimeSeconds, 0.001);
     }
 }

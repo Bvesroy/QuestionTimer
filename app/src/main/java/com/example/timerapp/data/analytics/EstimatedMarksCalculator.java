@@ -211,12 +211,28 @@ public class EstimatedMarksCalculator implements Serializable {
         public final double negativePenalty;
         public final double targetPaceSeconds;
         public final boolean paceWithinTarget;
+        public final long correctSolvingTimeMs;
+        public final long incorrectSolvingTimeMs;
+        public final double averageCorrectSolvingTimeSeconds;
+        public final double averageIncorrectSolvingTimeSeconds;
 
         public PerformanceAnalytics(String examType, int totalQuestions, int correctCount, int wrongCount,
                                     int unattemptedCount, double accuracyPercentage, long totalSolvingTimeMs,
                                     double averageSolvingTimeSeconds, double estimatedScore,
                                     double maxPossibleScore, double negativePenalty,
                                     double targetPaceSeconds, boolean paceWithinTarget) {
+            this(examType, totalQuestions, correctCount, wrongCount, unattemptedCount, accuracyPercentage,
+                 totalSolvingTimeMs, averageSolvingTimeSeconds, estimatedScore, maxPossibleScore, negativePenalty,
+                 targetPaceSeconds, paceWithinTarget, 0L, 0L, 0.0, 0.0);
+        }
+
+        public PerformanceAnalytics(String examType, int totalQuestions, int correctCount, int wrongCount,
+                                    int unattemptedCount, double accuracyPercentage, long totalSolvingTimeMs,
+                                    double averageSolvingTimeSeconds, double estimatedScore,
+                                    double maxPossibleScore, double negativePenalty,
+                                    double targetPaceSeconds, boolean paceWithinTarget,
+                                    long correctSolvingTimeMs, long incorrectSolvingTimeMs,
+                                    double averageCorrectSolvingTimeSeconds, double averageIncorrectSolvingTimeSeconds) {
             this.examType = examType;
             this.totalQuestions = totalQuestions;
             this.correctCount = correctCount;
@@ -230,15 +246,22 @@ public class EstimatedMarksCalculator implements Serializable {
             this.negativePenalty = negativePenalty;
             this.targetPaceSeconds = targetPaceSeconds;
             this.paceWithinTarget = paceWithinTarget;
+            this.correctSolvingTimeMs = correctSolvingTimeMs;
+            this.incorrectSolvingTimeMs = incorrectSolvingTimeMs;
+            this.averageCorrectSolvingTimeSeconds = averageCorrectSolvingTimeSeconds;
+            this.averageIncorrectSolvingTimeSeconds = averageIncorrectSolvingTimeSeconds;
         }
 
         public String getFormattedSummary() {
+            String wrongTiming = (wrongCount > 0)
+                    ? String.format(java.util.Locale.ROOT, " • WRONG TIME: %.0fs", averageIncorrectSolvingTimeSeconds)
+                    : "";
             return String.format(java.util.Locale.ROOT,
-                    "ACCURACY: %.0f%% (%d/%d) • %dC %dW • EST: %s%.0f PTS • AVG: %.0fs",
+                    "ACCURACY: %.0f%% (%d/%d) • %d Right, %d Wrong (%dC %dW) • EST: %s%.0f PTS • AVG: %.0fs%s",
                     accuracyPercentage, correctCount, (correctCount + wrongCount),
-                    correctCount, wrongCount,
+                    correctCount, wrongCount, correctCount, wrongCount,
                     estimatedScore >= 0 ? "+" : "", estimatedScore,
-                    averageSolvingTimeSeconds);
+                    averageSolvingTimeSeconds, wrongTiming);
         }
     }
 
@@ -262,14 +285,19 @@ public class EstimatedMarksCalculator implements Serializable {
         int correct = 0;
         int wrong = 0;
         long totalMs = 0L;
+        long correctMs = 0L;
+        long wrongMs = 0L;
         if (logs != null) {
             for (com.example.timerapp.model.QuestionLog log : logs) {
-                totalMs += log.getDurationMs();
+                long dur = log.getDurationMs();
+                totalMs += dur;
                 String outcome = (log.getOutcome() != null) ? log.getOutcome().trim().toUpperCase(java.util.Locale.ROOT) : "";
-                if ("CORRECT".equals(outcome) || "SOLVED".equals(outcome)) {
+                if ("CORRECT".equals(outcome) || "SOLVED".equals(outcome) || "RIGHT".equals(outcome)) {
                     correct++;
+                    correctMs += dur;
                 } else if ("INCORRECT".equals(outcome) || "WRONG".equals(outcome)) {
                     wrong++;
+                    wrongMs += dur;
                 }
             }
         }
@@ -278,6 +306,8 @@ public class EstimatedMarksCalculator implements Serializable {
         int unattempted = Math.max(0, validTotal - attempted);
         double accuracy = calculateAccuracy(correct, attempted);
         double avgSec = calculateAverageSolvingTimeSec(totalMs, attempted);
+        double avgCorrectSec = (correct > 0) ? (correctMs / 1000.0 / correct) : 0.0;
+        double avgWrongSec = (wrong > 0) ? (wrongMs / 1000.0 / wrong) : 0.0;
 
         boolean isAdv = EXAM_JEE_ADVANCED.equalsIgnoreCase(examType);
         double penaltyPerWrong = isAdv ? 2.0 : 1.0;
@@ -291,7 +321,8 @@ public class EstimatedMarksCalculator implements Serializable {
                 isAdv ? EXAM_JEE_ADVANCED : EXAM_JEE_MAIN,
                 validTotal, correct, wrong, unattempted, accuracy,
                 totalMs, avgSec, estimatedScore, maxScore, negativePenalty,
-                targetPace, paceWithin
+                targetPace, paceWithin,
+                correctMs, wrongMs, avgCorrectSec, avgWrongSec
         );
     }
 }

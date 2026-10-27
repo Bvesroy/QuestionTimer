@@ -926,6 +926,33 @@
                         android:textColor="@color/accent_running"
                         android:textSize="11sp" />
 
+                    <!-- Incorrect Questions & Timing Breakdown -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:letterSpacing="0.08"
+                        android:text="INCORRECT ANSWERS &amp; TIME ANALYSIS"
+                        android:textColor="@color/accent_discard"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvJeeIncorrectSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="0 Incorrect • 00:00 Total Time Lost"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <LinearLayout
+                        android:id="@+id/containerIncorrectQuestions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="vertical" />
+
                     <!-- Over-Target Question List -->
                     <TextView
                         android:layout_width="wrap_content"

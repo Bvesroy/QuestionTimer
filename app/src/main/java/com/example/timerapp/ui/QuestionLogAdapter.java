@@ -99,12 +99,21 @@ public class QuestionLogAdapter extends BaseAdapter {
 
         if (holder.btnTagQuestion != null) {
             String outcome = log.getOutcome();
-            if (outcome != null && !outcome.isEmpty() && !"SOLVED".equalsIgnoreCase(outcome)) {
-                holder.btnTagQuestion.setText(outcome.substring(0, Math.min(6, outcome.length())));
+            if (outcome != null) {
+                outcome = outcome.trim().toUpperCase(Locale.ROOT);
+            }
+            if ("RIGHT".equals(outcome) || "CORRECT".equals(outcome) || "SOLVED".equals(outcome)) {
+                holder.btnTagQuestion.setText("✓ RIGHT");
+                holder.btnTagQuestion.setTextColor(ctx.getColor(R.color.accent_running));
+                holder.btnTagQuestion.setBackgroundResource(R.drawable.bg_pill_accent);
+            } else if ("WRONG".equals(outcome) || "INCORRECT".equals(outcome)) {
+                holder.btnTagQuestion.setText("✗ WRONG");
                 holder.btnTagQuestion.setTextColor(ctx.getColor(R.color.accent_paused));
+                holder.btnTagQuestion.setBackgroundResource(R.drawable.bg_pill_orange);
             } else {
                 holder.btnTagQuestion.setText("TAG");
-                holder.btnTagQuestion.setTextColor(ctx.getColor(R.color.accent_highlight));
+                holder.btnTagQuestion.setTextColor(ctx.getColor(R.color.text_secondary));
+                holder.btnTagQuestion.setBackgroundResource(R.drawable.bg_pill);
             }
 
             holder.btnTagQuestion.setOnClickListener(v -> {

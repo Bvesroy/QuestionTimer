@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
     private TextView tvUndoMessage;
     private Button btnUndoAnswer;
     private TextView tvLiveAnalytics;
-    private boolean isTwoZoneRecordingEnabled = false;
+    private boolean isTwoZoneRecordingEnabled = true;
     private String currentJeeExamType = SettingsDialog.EXAM_TYPE_JEE_MAIN;
     private final Handler undoBannerHandler = new Handler(Looper.getMainLooper());
     private QuestionLog lastRecordedOutcomeLog = null;
@@ -179,7 +179,7 @@ public class MainActivity extends Activity {
         // Load saved timer size preference & Two-Zone Answer setting
         SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
         currentTimerSizeMode = prefs.getString(SettingsDialog.KEY_TIMER_SIZE_MODE, SettingsDialog.SIZE_MEDIUM);
-        isTwoZoneRecordingEnabled = prefs.getBoolean(SettingsDialog.KEY_TWO_ZONE_RECORDING, false);
+        isTwoZoneRecordingEnabled = prefs.getBoolean(SettingsDialog.KEY_TWO_ZONE_RECORDING, true);
         currentJeeExamType = prefs.getString(SettingsDialog.KEY_JEE_EXAM_TYPE, SettingsDialog.EXAM_TYPE_JEE_MAIN);
 
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -358,10 +358,10 @@ public class MainActivity extends Activity {
                     TwoZoneHitDetector detector = new TwoZoneHitDetector(width, height);
                     TouchZone zone = detector.detectVerticalZone(event.getX(), event.getY());
                     if (zone == TouchZone.ZONE_UPPER) {
-                        recordTwoZoneOutcome("INCORRECT");
+                        recordTwoZoneOutcome("WRONG");
                         return true;
                     } else if (zone == TouchZone.ZONE_LOWER) {
-                        recordTwoZoneOutcome("SOLVED");
+                        recordTwoZoneOutcome("RIGHT");
                         return true;
                     }
                 }
@@ -442,14 +442,15 @@ public class MainActivity extends Activity {
 
         int currentQNum = (currentSession != null) ? currentSession.getCurrentQuestion() : 1;
         long sessId = (currentSession != null) ? currentSession.getId() : 1L;
+        boolean isWrong = "INCORRECT".equalsIgnoreCase(outcome) || "WRONG".equalsIgnoreCase(outcome);
         QuestionLog log = new QuestionLog(
                 System.currentTimeMillis(),
                 sessId,
                 currentQNum,
                 authoritativeDuration,
                 System.currentTimeMillis(),
-                "", "", "MEDIUM", outcome, 3,
-                "INCORRECT".equals(outcome) ? "MISTAKE" : "", ""
+                "", "", "MEDIUM", isWrong ? "WRONG" : "RIGHT", 3,
+                isWrong ? "MISTAKE" : "", ""
         );
 
         if (currentSession != null) {
@@ -489,7 +490,7 @@ public class MainActivity extends Activity {
         boolean isIncorrect = "INCORRECT".equals(log.getOutcome()) || "WRONG".equals(log.getOutcome());
         double penalty = "JEE_ADVANCED".equalsIgnoreCase(currentJeeExamType) ? 2.0 : 1.0;
         String markStr = isIncorrect ? ("-" + (int) penalty + " PTS") : "+4 PTS";
-        String outcomeStr = isIncorrect ? "WRONG" : "CORRECT";
+        String outcomeStr = isIncorrect ? "WRONG" : "RIGHT";
         tvUndoMessage.setText(String.format(Locale.ROOT, "Q#%d %s (%s, %s)",
                 log.getQuestionNumber(), outcomeStr, markStr, log.getFormattedDuration()));
         layoutUndoBanner.setVisibility(View.VISIBLE);
@@ -935,7 +936,7 @@ public class MainActivity extends Activity {
             case RUNNING:
             case RUNNING_QUESTION:
                 if (isTwoZoneRecordingEnabled) {
-                    tvStateBadge.setText("UPPER=WRONG • LOWER=CORRECT");
+                    tvStateBadge.setText("UPPER=WRONG • LOWER=RIGHT");
                 } else {
                     tvStateBadge.setText(R.string.badge_running);
                 }
@@ -949,7 +950,7 @@ public class MainActivity extends Activity {
                     boolean isWrong = "INCORRECT".equals(lastRecordedOutcomeLog.getOutcome()) || "WRONG".equals(lastRecordedOutcomeLog.getOutcome());
                     double penalty = "JEE_ADVANCED".equalsIgnoreCase(currentJeeExamType) ? 2.0 : 1.0;
                     String scoreDelta = isWrong ? ("-" + (int) penalty) : "+4";
-                    String outcomeLabel = isWrong ? "WRONG" : "CORRECT";
+                    String outcomeLabel = isWrong ? "WRONG" : "RIGHT";
                     int nextQ = (currentSession != null) ? currentSession.getCurrentQuestion() : 2;
                     tvStateBadge.setText(String.format(Locale.ROOT, "%s (%s PTS) • TAP FOR Q%d", outcomeLabel, scoreDelta, nextQ));
                     tvStateBadge.setBackgroundResource(isWrong ? R.drawable.bg_pill_orange : R.drawable.bg_pill_accent);

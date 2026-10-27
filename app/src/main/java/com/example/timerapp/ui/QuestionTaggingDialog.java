@@ -119,8 +119,8 @@ public class QuestionTaggingDialog extends Dialog {
     }
 
     private void setupListeners() {
-        pillOutcomeSolved.setOnClickListener(v -> { selectedOutcome = "SOLVED"; updateOutcomePills(); });
-        pillOutcomeIncorrect.setOnClickListener(v -> { selectedOutcome = "INCORRECT"; updateOutcomePills(); });
+        pillOutcomeSolved.setOnClickListener(v -> { selectedOutcome = "RIGHT"; updateOutcomePills(); });
+        pillOutcomeIncorrect.setOnClickListener(v -> { selectedOutcome = "WRONG"; updateOutcomePills(); });
         pillOutcomeSkipped.setOnClickListener(v -> { selectedOutcome = "SKIPPED"; updateOutcomePills(); });
         pillOutcomeNeedsReview.setOnClickListener(v -> { selectedOutcome = "NEEDS REVIEW"; updateOutcomePills(); });
         pillOutcomeAbandoned.setOnClickListener(v -> { selectedOutcome = "ABANDONED"; updateOutcomePills(); });
@@ -147,8 +147,10 @@ public class QuestionTaggingDialog extends Dialog {
     }
 
     private void updateOutcomePills() {
-        setPillSelected(pillOutcomeSolved, "SOLVED".equalsIgnoreCase(selectedOutcome));
-        setPillSelected(pillOutcomeIncorrect, "INCORRECT".equalsIgnoreCase(selectedOutcome));
+        boolean isRight = "RIGHT".equalsIgnoreCase(selectedOutcome) || "SOLVED".equalsIgnoreCase(selectedOutcome) || "CORRECT".equalsIgnoreCase(selectedOutcome);
+        boolean isWrong = "WRONG".equalsIgnoreCase(selectedOutcome) || "INCORRECT".equalsIgnoreCase(selectedOutcome);
+        setPillSelected(pillOutcomeSolved, isRight);
+        setPillSelected(pillOutcomeIncorrect, isWrong);
         setPillSelected(pillOutcomeSkipped, "SKIPPED".equalsIgnoreCase(selectedOutcome));
         setPillSelected(pillOutcomeNeedsReview, "NEEDS REVIEW".equalsIgnoreCase(selectedOutcome));
         setPillSelected(pillOutcomeAbandoned, "ABANDONED".equalsIgnoreCase(selectedOutcome));

@@ -126,6 +126,8 @@ public class HistoryBottomSheet extends Dialog {
     private TextView tvJeeProfileTitle, tvJeeEstimatedScore, tvJeeAccuracy;
     private TextView tvJeePhysicsBreakdown, tvJeeChemistryBreakdown, tvJeeMathBreakdown;
     private TextView tvJeeMarksGain, tvJeeNegativePenalty, tvJeeSillyMistakePotential;
+    private TextView tvJeeIncorrectSummary;
+    private LinearLayout containerIncorrectQuestions;
     private Button btnOpenMistakeNotebook;
     private LinearLayout containerOverTargetQuestions;
     private boolean isJeeMainProfile = true;
@@ -284,6 +286,8 @@ public class HistoryBottomSheet extends Dialog {
         tvJeeMarksGain = view.findViewById(R.id.tvJeeMarksGain);
         tvJeeNegativePenalty = view.findViewById(R.id.tvJeeNegativePenalty);
         tvJeeSillyMistakePotential = view.findViewById(R.id.tvJeeSillyMistakePotential);
+        tvJeeIncorrectSummary = view.findViewById(R.id.tvJeeIncorrectSummary);
+        containerIncorrectQuestions = view.findViewById(R.id.containerIncorrectQuestions);
         btnOpenMistakeNotebook = view.findViewById(R.id.btnOpenMistakeNotebook);
         if (btnOpenMistakeNotebook != null) {
             btnOpenMistakeNotebook.setOnClickListener(v -> openMistakeReviewDialog());
@@ -1034,11 +1038,14 @@ public class HistoryBottomSheet extends Dialog {
         int skippedCount = 0;
         int sillyMistakesCount = 0;
         long totalDurationAllAttempts = 0L;
+        long correctDur = 0L;
+        long incorrectDur = 0L;
 
         long physicsDur = 0, chemistryDur = 0, mathDur = 0;
         int physicsQ = 0, chemistryQ = 0, mathQ = 0;
 
         List<String> overTargetItems = new ArrayList<>();
+        List<String> incorrectDetailItems = new ArrayList<>();
 
         for (TimerSession s : allSessions) {
             String sessSubject = s.getSubject() != null ? s.getSubject().toUpperCase(Locale.ROOT) : "GENERAL";
@@ -1050,16 +1057,22 @@ public class HistoryBottomSheet extends Dialog {
                     sillyMistakesCount++;
                 }
 
-                if ("SOLVED".equals(outcome) || "CORRECT".equals(outcome)) {
+                long dur = log.getDurationMs();
+                totalDurationAllAttempts += dur;
+
+                if ("SOLVED".equals(outcome) || "CORRECT".equals(outcome) || "RIGHT".equals(outcome)) {
                     correctCount++;
+                    correctDur += dur;
                 } else if ("INCORRECT".equals(outcome) || "WRONG".equals(outcome)) {
                     incorrectCount++;
+                    incorrectDur += dur;
+                    double penalty = isJeeMainProfile ? 1.0 : 2.0;
+                    incorrectDetailItems.add(String.format(Locale.ROOT, "Q#%d (%s): %s • Penalty -%.0f pt",
+                            log.getQuestionNumber(), s.getName(), log.getFormattedDuration(), penalty));
                 } else {
                     skippedCount++;
                 }
 
-                long dur = log.getDurationMs();
-                totalDurationAllAttempts += dur;
                 double durSec = dur / 1000.0;
                 if (durSec > targetPaceSec) {
                     overTargetItems.add(String.format(Locale.ROOT, "Q#%d (%s): %.0fs (Target: %.0fs)",
@@ -1084,6 +1097,8 @@ public class HistoryBottomSheet extends Dialog {
         double negativePenalty = incorrectCount * penaltyPerIncorrect;
         double projectedScore = correctGain - negativePenalty;
         double sillyPotential = sillyMistakesCount * (4.0 + penaltyPerIncorrect);
+        long correctAvgSec = correctCount > 0 ? (correctDur / (correctCount * 1000L)) : 0L;
+        long incorrectAvgSec = incorrectCount > 0 ? (incorrectDur / (incorrectCount * 1000L)) : 0L;
 
         if (tvJeeEstimatedScore != null) {
             tvJeeEstimatedScore.setText(String.format(Locale.ROOT, "%.0f Pts (Net)", projectedScore));
@@ -1102,7 +1117,48 @@ public class HistoryBottomSheet extends Dialog {
         if (tvJeeAccuracy != null) {
             int accuracyPct = totalAttempted > 0 ? (int) Math.round((correctCount * 100.0) / totalAttempted) : 0;
             long overallAvgSec = totalAttempted > 0 ? (totalDurationAllAttempts / (totalAttempted * 1000L)) : 0L;
-            tvJeeAccuracy.setText(String.format(Locale.ROOT, "%d%% Accuracy (%d/%d Solved) • %ds/Q avg", accuracyPct, correctCount, totalAttempted, overallAvgSec));
+            tvJeeAccuracy.setText(String.format(Locale.ROOT, "%d%% Accuracy (%d Right, %d Wrong / %d) • %ds/Q avg (%ds Right vs %ds Wrong)",
+                    accuracyPct, correctCount, incorrectCount, totalAttempted, overallAvgSec, correctAvgSec, incorrectAvgSec));
+        }
+
+        if (tvJeeIncorrectSummary != null) {
+            if (incorrectCount == 0) {
+                tvJeeIncorrectSummary.setText("0 Incorrect Questions • 00:00 Total Time Lost • 0 Penalty");
+            } else {
+                tvJeeIncorrectSummary.setText(String.format(Locale.ROOT,
+                        "%d Incorrect Questions • %s Time Lost • Avg %ds/Q • -%.0f pts penalty",
+                        incorrectCount, formatDurationShort(incorrectDur), incorrectAvgSec, negativePenalty));
+            }
+        }
+
+        if (containerIncorrectQuestions != null) {
+            containerIncorrectQuestions.removeAllViews();
+            if (incorrectDetailItems.isEmpty()) {
+                TextView empty = new TextView(getContext());
+                empty.setText("✓ 100% Accuracy! No incorrect answers recorded.");
+                empty.setTextColor(Color.parseColor("#30D158"));
+                empty.setTextSize(11f);
+                empty.setPadding(0, 4, 0, 4);
+                containerIncorrectQuestions.addView(empty);
+            } else {
+                int limit = Math.min(10, incorrectDetailItems.size());
+                for (int i = 0; i < limit; i++) {
+                    TextView item = new TextView(getContext());
+                    item.setText("• " + incorrectDetailItems.get(i));
+                    item.setTextColor(Color.parseColor("#FF453A"));
+                    item.setTextSize(11f);
+                    item.setPadding(0, 4, 0, 4);
+                    containerIncorrectQuestions.addView(item);
+                }
+                if (incorrectDetailItems.size() > limit) {
+                    TextView more = new TextView(getContext());
+                    more.setText(String.format(Locale.ROOT, "+ %d more incorrect questions", incorrectDetailItems.size() - limit));
+                    more.setTextColor(Color.parseColor("#8E8E93"));
+                    more.setTextSize(10f);
+                    more.setPadding(0, 4, 0, 4);
+                    containerIncorrectQuestions.addView(more);
+                }
+            }
         }
 
         if (tvJeePhysicsBreakdown != null) {

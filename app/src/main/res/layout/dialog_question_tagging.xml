@@ -86,7 +86,7 @@
                         android:paddingTop="5dp"
                         android:paddingEnd="12dp"
                         android:paddingBottom="5dp"
-                        android:text="✓ SOLVED"
+                        android:text="✓ RIGHT"
                         android:textColor="@color/accent_highlight"
                         android:textSize="12sp" />
 
@@ -103,7 +103,7 @@
                         android:paddingTop="5dp"
                         android:paddingEnd="12dp"
                         android:paddingBottom="5dp"
-                        android:text="✗ INCORRECT"
+                        android:text="✗ WRONG"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 

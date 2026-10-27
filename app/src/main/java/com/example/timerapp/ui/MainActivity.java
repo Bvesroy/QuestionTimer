@@ -500,13 +500,39 @@ public class MainActivity extends Activity {
         // Screen Flash visual effect if selected
         if (SettingsDialog.EFFECT_FLASH.equals(effect) && rootContainer != null) {
             int accentColor = ThemeManager.getAccentColor(this);
-            int flashColor = Color.argb(100, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor));
+            int flashColor = Color.argb(125, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor));
             rootContainer.setBackgroundColor(flashColor);
             rootContainer.postDelayed(() -> {
                 if (rootContainer != null) {
                     rootContainer.setBackgroundColor(ThemeManager.getBackgroundColor(this));
                 }
-            }, Math.min(180L, dur));
+            }, Math.min(250L, dur));
+        }
+
+        // AMOLED Glow Pulse shadow layer if selected
+        if (SettingsDialog.EFFECT_GLOW_PULSE.equals(effect) && tvTimerReadout != null) {
+            int accentColor = ThemeManager.getAccentColor(this);
+            tvTimerReadout.setShadowLayer(35f, 0, 0, accentColor);
+            tvTimerReadout.postDelayed(() -> {
+                if (tvTimerReadout != null) {
+                    tvTimerReadout.setShadowLayer(0, 0, 0, 0);
+                }
+            }, dur * 2);
+        }
+
+        // Smooth visual cue for tvStateBadge
+        if (tvStateBadge != null && tvStateBadge.getVisibility() == View.VISIBLE) {
+            tvStateBadge.animate().cancel();
+            tvStateBadge.setAlpha(0.25f);
+            tvStateBadge.setScaleX(0.92f);
+            tvStateBadge.setScaleY(0.92f);
+            tvStateBadge.animate()
+                    .alpha(1.0f)
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(dur)
+                    .setInterpolator(new DecelerateInterpolator())
+                    .start();
         }
 
         if (tvTimerReadout != null) {

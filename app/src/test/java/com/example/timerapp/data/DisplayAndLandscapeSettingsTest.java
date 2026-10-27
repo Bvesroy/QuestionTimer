@@ -234,8 +234,11 @@ public class DisplayAndLandscapeSettingsTest {
         displaySettings.setEndTimerDurationMs(400);
         Assert.assertEquals(400, displaySettings.getEndTimerDurationMs());
 
-        displaySettings.setEndTimerDurationMs(650);
-        Assert.assertEquals(650, displaySettings.getEndTimerDurationMs());
+        displaySettings.setEndTimerDurationMs(600);
+        Assert.assertEquals(600, displaySettings.getEndTimerDurationMs());
+
+        displaySettings.setEndTimerDurationMs(1000);
+        Assert.assertEquals(1000, displaySettings.getEndTimerDurationMs());
 
         // Guard against zero / negative duration
         displaySettings.setEndTimerDurationMs(0);

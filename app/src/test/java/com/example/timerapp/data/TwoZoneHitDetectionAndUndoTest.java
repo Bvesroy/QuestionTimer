@@ -318,4 +318,38 @@ public class TwoZoneHitDetectionAndUndoTest {
         // Bottom control area is excluded
         Assert.assertEquals(TouchZone.ZONE_EXCLUDED, detector.detectZone(540f, 2300f));
     }
+
+    @Test
+    public void testFullSurfaceTwoZoneRunningInterceptionPortraitAndLandscape() {
+        // 1. Portrait mode (1080 x 2400, midpoint = 1200)
+        TwoZoneHitDetector portraitDetector = new TwoZoneHitDetector(1080, 2400);
+        portraitDetector.setOrientation(TwoZoneHitDetector.Orientation.VERTICAL);
+
+        // Header taps (session title, target text, exam banner) MUST register as ZONE_UPPER (Wrong)
+        Assert.assertEquals(TouchZone.ZONE_UPPER, portraitDetector.detectZone(540f, 40f));   // Exam banner tap
+        Assert.assertEquals(TouchZone.ZONE_UPPER, portraitDetector.detectZone(540f, 100f));  // Session title tap
+        Assert.assertEquals(TouchZone.ZONE_UPPER, portraitDetector.detectZone(540f, 160f));  // Target text tap
+        Assert.assertEquals(TouchZone.ZONE_UPPER, portraitDetector.detectZone(200f, 800f));  // Upper timer area
+        Assert.assertEquals(TouchZone.ZONE_UPPER, portraitDetector.detectZone(900f, 1199f)); // Pixel right above boundary
+
+        // Lower half taps MUST register as ZONE_LOWER (Right)
+        Assert.assertEquals(TouchZone.ZONE_LOWER, portraitDetector.detectZone(540f, 1200f)); // Midpoint boundary
+        Assert.assertEquals(TouchZone.ZONE_LOWER, portraitDetector.detectZone(540f, 1600f)); // Lower central area
+        Assert.assertEquals(TouchZone.ZONE_LOWER, portraitDetector.detectZone(100f, 2300f)); // Lower corner area
+
+        // 2. Landscape mode (2400 x 1080, midpoint = 540)
+        TwoZoneHitDetector landscapeDetector = new TwoZoneHitDetector(2400, 1080);
+        landscapeDetector.setOrientation(TwoZoneHitDetector.Orientation.VERTICAL);
+
+        // Header taps in landscape MUST register as ZONE_UPPER (Wrong)
+        Assert.assertEquals(TouchZone.ZONE_UPPER, landscapeDetector.detectZone(1200f, 30f));  // Top bar banner/title
+        Assert.assertEquals(TouchZone.ZONE_UPPER, landscapeDetector.detectZone(1200f, 90f));  // Target text
+        Assert.assertEquals(TouchZone.ZONE_UPPER, landscapeDetector.detectZone(400f, 300f));  // Left upper quadrant
+        Assert.assertEquals(TouchZone.ZONE_UPPER, landscapeDetector.detectZone(2000f, 539f)); // Right pixel above boundary
+
+        // Lower half taps in landscape MUST register as ZONE_LOWER (Right)
+        Assert.assertEquals(TouchZone.ZONE_LOWER, landscapeDetector.detectZone(1200f, 540f)); // Midpoint boundary
+        Assert.assertEquals(TouchZone.ZONE_LOWER, landscapeDetector.detectZone(1200f, 850f)); // Lower central readout
+        Assert.assertEquals(TouchZone.ZONE_LOWER, landscapeDetector.detectZone(200f, 1050f)); // Bottom left corner
+    }
 }

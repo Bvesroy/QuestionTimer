@@ -85,7 +85,7 @@
                 android:gravity="center"
                 android:letterSpacing="0.08"
                 android:paddingHorizontal="12dp"
-                android:text="🎨 Themes &amp; Size"
+                android:text="🎨 Themes &amp; Display"
                 android:textColor="@color/accent_highlight"
                 android:textSize="11sp" />
 
@@ -499,12 +499,12 @@
                     android:layout_marginVertical="14dp"
                     android:background="@color/amoled_divider" />
 
-                <!-- Two-Zone Click Feedback & Transition Customization -->
+                <!-- End Timer Transitions & Visual Effects -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:letterSpacing="0.12"
-                    android:text="TWO-ZONE TOUCH &amp; CLICK FEEDBACK"
+                    android:letterSpacing="0.1"
+                    android:text="END TIMER TRANSITIONS &amp; EFFECTS"
                     android:textColor="@color/accent_highlight"
                     android:textSize="11sp"
                     android:textStyle="bold" />
@@ -512,111 +512,71 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Upper screen tap = Wrong outcome (Red flash) • Lower screen tap = Right outcome (Green flash)"
+                    android:layout_marginTop="10dp"
+                    android:letterSpacing="0.1"
+                    android:text="TRANSITION ANIMATION"
                     android:textColor="@color/text_secondary"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
 
-                <CheckBox
-                    android:id="@+id/cbZoneClickEffect"
+                <Spinner
+                    android:id="@+id/spinnerEndTimerTransition"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
+
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:checked="true"
-                    android:text="Show Red / Green Clicky Feedback"
-                    android:textColor="@color/text_primary"
-                    android:textSize="12sp" />
+                    android:layout_marginTop="10dp"
+                    android:letterSpacing="0.1"
+                    android:text="TRANSITION &amp; EFFECT DURATION"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
 
-                <LinearLayout
-                    android:id="@+id/layoutZoneClickEffectOptions"
+                <Spinner
+                    android:id="@+id/spinnerEndTimerDuration"
                     android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
+
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="vertical">
+                    android:layout_marginTop="12dp"
+                    android:letterSpacing="0.1"
+                    android:text="VISUAL END EFFECT"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                <Spinner
+                    android:id="@+id/spinnerEndTimerEffect"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
 
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:letterSpacing="0.1"
+                    android:text="END TIMER / PAUSE TEXT STYLE"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:letterSpacing="0.08"
-                                android:text="EFFECT TIMING"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="10sp" />
-
-                            <Spinner
-                                android:id="@+id/spinnerClickEffectDuration"
-                                android:layout_width="match_parent"
-                                android:layout_height="40dp"
-                                android:layout_marginTop="4dp"
-                                android:background="@drawable/bg_pill"
-                                android:popupBackground="@drawable/bg_dialog_card" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="6dp"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:letterSpacing="0.08"
-                                android:text="TRANSITION STYLE"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="10sp" />
-
-                            <Spinner
-                                android:id="@+id/spinnerClickTransition"
-                                android:layout_width="match_parent"
-                                android:layout_height="40dp"
-                                android:layout_marginTop="4dp"
-                                android:background="@drawable/bg_pill"
-                                android:popupBackground="@drawable/bg_dialog_card" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:orientation="horizontal">
-
-                        <Button
-                            android:id="@+id/btnTestUpperWrong"
-                            android:layout_width="0dp"
-                            android:layout_height="36dp"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:background="@drawable/bg_pill_orange"
-                            android:text="Test Upper (Red)"
-                            android:textColor="@color/accent_paused"
-                            android:textSize="11sp" />
-
-                        <Button
-                            android:id="@+id/btnTestLowerRight"
-                            android:layout_width="0dp"
-                            android:layout_height="36dp"
-                            android:layout_weight="1"
-                            android:layout_marginStart="6dp"
-                            android:background="@drawable/bg_pill_accent"
-                            android:text="Test Lower (Green)"
-                            android:textColor="@color/accent_running"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
+                <Spinner
+                    android:id="@+id/spinnerEndTimerTextStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
 
             </LinearLayout>
 
@@ -1149,6 +1109,126 @@
                         android:popupBackground="@drawable/bg_dialog_card" />
                 </LinearLayout>
 
+                <!-- Two-Zone Click Feedback & Transition Customization -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:letterSpacing="0.1"
+                    android:text="TWO-ZONE TOUCH &amp; CLICK FEEDBACK"
+                    android:textColor="@color/accent_highlight"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Upper screen tap = Wrong outcome (Red flash) • Lower screen tap = Right outcome (Green flash)"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="10sp" />
+
+                <CheckBox
+                    android:id="@+id/cbZoneClickEffect"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:checked="true"
+                    android:text="Show Red / Green Clicky Feedback"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp" />
+
+                <LinearLayout
+                    android:id="@+id/layoutZoneClickEffectOptions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.08"
+                                android:text="EFFECT TIMING"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <Spinner
+                                android:id="@+id/spinnerClickEffectDuration"
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:layout_marginTop="4dp"
+                                android:background="@drawable/bg_pill"
+                                android:popupBackground="@drawable/bg_dialog_card" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.08"
+                                android:text="TRANSITION STYLE"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp" />
+
+                            <Spinner
+                                android:id="@+id/spinnerClickTransition"
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:layout_marginTop="4dp"
+                                android:background="@drawable/bg_pill"
+                                android:popupBackground="@drawable/bg_dialog_card" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnTestUpperWrong"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_pill_orange"
+                            android:text="Test Upper (Red)"
+                            android:textColor="@color/accent_paused"
+                            android:textSize="11sp" />
+
+                        <Button
+                            android:id="@+id/btnTestLowerRight"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:background="@drawable/bg_pill_accent"
+                            android:text="Test Lower (Green)"
+                            android:textColor="@color/accent_running"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -1236,72 +1316,6 @@
                     android:background="@drawable/bg_pill"
                     android:popupBackground="@drawable/bg_dialog_card" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="14dp"
-                    android:background="@color/amoled_divider" />
-
-                <!-- End Timer Transitions & Visual Effects -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:letterSpacing="0.1"
-                    android:text="END TIMER TRANSITIONS &amp; EFFECTS"
-                    android:textColor="@color/accent_highlight"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:letterSpacing="0.1"
-                    android:text="TRANSITION ANIMATION"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-
-                <Spinner
-                    android:id="@+id/spinnerEndTimerTransition"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="6dp"
-                    android:background="@drawable/bg_pill"
-                    android:popupBackground="@drawable/bg_dialog_card" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:letterSpacing="0.1"
-                    android:text="VISUAL END EFFECT"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-
-                <Spinner
-                    android:id="@+id/spinnerEndTimerEffect"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="6dp"
-                    android:background="@drawable/bg_pill"
-                    android:popupBackground="@drawable/bg_dialog_card" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:letterSpacing="0.1"
-                    android:text="END TIMER / PAUSE TEXT STYLE"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-
-                <Spinner
-                    android:id="@+id/spinnerEndTimerTextStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="6dp"
-                    android:background="@drawable/bg_pill"
-                    android:popupBackground="@drawable/bg_dialog_card" />
             </LinearLayout>
 
             <!-- ============================================== -->

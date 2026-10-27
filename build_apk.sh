@@ -251,10 +251,16 @@ CURRENT_STAGE="AAPT2 link"
 CURRENT_STAGE_KEY="aapt2_link"
 S2_START=$(mono_ms)
 CURRENT_STAGE_START=$S2_START
+MANIFEST_VERSION_CODE=$(grep -o 'android:versionCode="[^"]*"' "$DIR/app/src/main/AndroidManifest.xml" | cut -d'"' -f2 || echo "6")
+MANIFEST_VERSION_NAME=$(grep -o 'android:versionName="[^"]*"' "$DIR/app/src/main/AndroidManifest.xml" | cut -d'"' -f2 || echo "1.6.0")
+
 if [ -d "$DIR/app/src/main/assets" ]; then
     "$BUILD_TOOLS/aapt2" link \
         -I "$PLATFORM_JAR" \
         --manifest "$DIR/app/src/main/AndroidManifest.xml" \
+        --replace-version \
+        --version-code "$MANIFEST_VERSION_CODE" \
+        --version-name "$MANIFEST_VERSION_NAME" \
         --java "$BUILD_DIR/gen" \
         -o "$BUILD_DIR/linked.apk" \
         "$BUILD_DIR/resources.zip" \
@@ -264,6 +270,9 @@ else
     "$BUILD_TOOLS/aapt2" link \
         -I "$PLATFORM_JAR" \
         --manifest "$DIR/app/src/main/AndroidManifest.xml" \
+        --replace-version \
+        --version-code "$MANIFEST_VERSION_CODE" \
+        --version-name "$MANIFEST_VERSION_NAME" \
         --java "$BUILD_DIR/gen" \
         -o "$BUILD_DIR/linked.apk" \
         "$BUILD_DIR/resources.zip" \

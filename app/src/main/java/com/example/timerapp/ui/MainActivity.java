@@ -483,9 +483,66 @@ public class MainActivity extends Activity {
         SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
         String effect = prefs.getString(SettingsDialog.KEY_END_TIMER_EFFECT, SettingsDialog.EFFECT_GLOW_PULSE);
         String transition = prefs.getString(SettingsDialog.KEY_END_TIMER_TRANSITION, SettingsDialog.TRANSITION_SMOOTH_FADE);
+        int durationMs = prefs.getInt(SettingsDialog.KEY_END_TIMER_DURATION_MS, SettingsDialog.DEFAULT_END_TIMER_DURATION_MS);
+        long dur = Math.max(100L, durationMs);
 
-        // 1. Transition Animation on tvTimerReadout
+        // Haptic feedback on pause / end timer
+        if (vibrator != null && prefs.getBoolean(SettingsDialog.KEY_HAPTIC_ENABLED, true)) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(45, VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    vibrator.vibrate(45);
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Screen Flash visual effect if selected
+        if (SettingsDialog.EFFECT_FLASH.equals(effect) && rootContainer != null) {
+            int accentColor = ThemeManager.getAccentColor(this);
+            int flashColor = Color.argb(100, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor));
+            rootContainer.setBackgroundColor(flashColor);
+            rootContainer.postDelayed(() -> {
+                if (rootContainer != null) {
+                    rootContainer.setBackgroundColor(ThemeManager.getBackgroundColor(this));
+                }
+            }, Math.min(180L, dur));
+        }
+
         if (tvTimerReadout != null) {
+            tvTimerReadout.animate().cancel();
+
+            Runnable onTransitionFinished = () -> {
+                // Secondary visual pulse/bounce executed AFTER transition to avoid cancellation
+                if (SettingsDialog.EFFECT_GLOW_PULSE.equals(effect) && tvTimerReadout != null) {
+                    tvTimerReadout.animate()
+                            .scaleX(1.08f)
+                            .scaleY(1.08f)
+                            .setDuration(dur / 2)
+                            .withEndAction(() -> {
+                                if (tvTimerReadout != null) {
+                                    tvTimerReadout.animate()
+                                            .scaleX(1.0f)
+                                            .scaleY(1.0f)
+                                            .setDuration(dur / 2)
+                                            .start();
+                                }
+                            })
+                            .start();
+                } else if (SettingsDialog.EFFECT_SUBTLE_BOUNCE.equals(effect) && tvTimerReadout != null) {
+                    tvTimerReadout.animate()
+                            .scaleX(1.04f)
+                            .scaleY(1.04f)
+                            .setDuration(dur / 2)
+                            .withEndAction(() -> {
+                                if (tvTimerReadout != null) {
+                                    tvTimerReadout.animate().scaleX(1.0f).scaleY(1.0f).setDuration(dur / 2).start();
+                                }
+                            })
+                            .start();
+                }
+            };
+
             switch (transition) {
                 case SettingsDialog.TRANSITION_SCALE_POP:
                     tvTimerReadout.setScaleX(0.85f);
@@ -494,7 +551,8 @@ public class MainActivity extends Activity {
                             .scaleX(1.0f)
                             .scaleY(1.0f)
                             .setInterpolator(new OvershootInterpolator(2.2f))
-                            .setDuration(320L)
+                            .setDuration(dur)
+                            .withEndAction(onTransitionFinished)
                             .start();
                     break;
                 case SettingsDialog.TRANSITION_SLIDE_DOWN:
@@ -504,7 +562,8 @@ public class MainActivity extends Activity {
                             .translationY(0f)
                             .alpha(1.0f)
                             .setInterpolator(new DecelerateInterpolator())
-                            .setDuration(260L)
+                            .setDuration(dur)
+                            .withEndAction(onTransitionFinished)
                             .start();
                     break;
                 case SettingsDialog.TRANSITION_INSTANT:
@@ -512,56 +571,18 @@ public class MainActivity extends Activity {
                     tvTimerReadout.setScaleX(1.0f);
                     tvTimerReadout.setScaleY(1.0f);
                     tvTimerReadout.setTranslationY(0f);
+                    onTransitionFinished.run();
                     break;
                 case SettingsDialog.TRANSITION_SMOOTH_FADE:
                 default:
                     tvTimerReadout.setAlpha(0.35f);
                     tvTimerReadout.animate()
                             .alpha(1.0f)
-                            .setDuration(250L)
+                            .setDuration(dur)
+                            .withEndAction(onTransitionFinished)
                             .start();
                     break;
             }
-        }
-
-        // 2. Visual end effect
-        if (SettingsDialog.EFFECT_GLOW_PULSE.equals(effect) && tvTimerReadout != null) {
-            tvTimerReadout.animate()
-                    .scaleX(1.08f)
-                    .scaleY(1.08f)
-                    .setDuration(160L)
-                    .withEndAction(() -> {
-                        if (tvTimerReadout != null) {
-                            tvTimerReadout.animate()
-                                    .scaleX(1.0f)
-                                    .scaleY(1.0f)
-                                    .setDuration(200L)
-                                    .start();
-                        }
-                    })
-                    .start();
-        } else if (SettingsDialog.EFFECT_FLASH.equals(effect)) {
-            if (rootContainer != null) {
-                int accentColor = ThemeManager.getAccentColor(this);
-                int flashColor = Color.argb(45, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor));
-                rootContainer.setBackgroundColor(flashColor);
-                rootContainer.postDelayed(() -> {
-                    if (rootContainer != null) {
-                        rootContainer.setBackgroundColor(ThemeManager.getBackgroundColor(this));
-                    }
-                }, 150L);
-            }
-        } else if (SettingsDialog.EFFECT_SUBTLE_BOUNCE.equals(effect) && tvTimerReadout != null) {
-            tvTimerReadout.animate()
-                    .scaleX(1.04f)
-                    .scaleY(1.04f)
-                    .setDuration(120L)
-                    .withEndAction(() -> {
-                        if (tvTimerReadout != null) {
-                            tvTimerReadout.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120L).start();
-                        }
-                    })
-                    .start();
         }
     }
 
@@ -610,33 +631,48 @@ public class MainActivity extends Activity {
                 touchDownRawY = ev.getRawY();
                 touchDownRealtime = SystemClock.elapsedRealtime();
 
-                // If user touched an interactive utility control, let super dispatch handle it
+                // During active question timing or when resolving a question,
+                // capture touch authority-first to guarantee headers, title, or target text
+                // cannot steal or intercept the two-zone outcome tap.
+                if (currentState.isRunning() || (currentState == TimerState.PAUSED && manualPauseActive)) {
+                    return true;
+                }
+
+                // If user touched an interactive utility control while paused/idle, let normal dispatch occur
                 if (isInteractiveControlTouch(ev)) {
                     return super.dispatchTouchEvent(ev);
                 }
 
-                // For timing zone taps, notify super but return true so the Android
-                // input manager guarantees that ACTION_UP is delivered to this Activity!
-                super.dispatchTouchEvent(ev);
                 return true;
+
+            case MotionEvent.ACTION_MOVE:
+                if (currentState.isRunning() || (currentState == TimerState.PAUSED && manualPauseActive)) {
+                    return true;
+                }
+                break;
 
             case MotionEvent.ACTION_UP:
                 float dx = Math.abs(ev.getRawX() - touchDownRawX);
                 float dy = Math.abs(ev.getRawY() - touchDownRawY);
                 long dt = SystemClock.elapsedRealtime() - touchDownRealtime;
 
-                // Ignore dragging, swiping, or prolonged long-press
-                if (dx > 60f || dy > 60f || dt > 800) {
-                    return super.dispatchTouchEvent(ev);
-                }
+                // Generous movement threshold scaled with display density
+                // Accommodates thumb rolling & capacitive deflection on physical high-DPI screens
+                float density = getResources().getDisplayMetrics().density;
+                float maxMovement = Math.max(160f, 48f * density);
 
-                // If touch hit a registered interactive control button, let normal click dispatch occur
-                if (isInteractiveControlTouch(ev)) {
-                    return super.dispatchTouchEvent(ev);
-                }
+                // 1. Authoritative Question Outcome Detection during active question
+                // When timer is running or question is active, upper half = WRONG, lower half = RIGHT.
+                // It MUST authoritatively and unambiguously register as WRONG (+ red visual flash + appropriate score penalty / mark),
+                // regardless of whether they tap on or near headers, target text, or session title, and in BOTH portrait and landscape.
+                boolean isResolvingQuestion = currentState.isRunning() ||
+                        (currentState == TimerState.PAUSED && manualPauseActive);
 
-                // Two-Zone Answer Outcome Selection when tracking is enabled and timer is running
-                if (isTwoZoneRecordingEnabled && currentState.isRunning()) {
+                if (isResolvingQuestion) {
+                    if (dx > maxMovement || dy > maxMovement || dt > 1500L) {
+                        return true;
+                    }
+
                     float midY;
                     if (rootContainer != null && rootContainer.getHeight() > 0) {
                         int[] loc = new int[2];
@@ -652,6 +688,16 @@ public class MainActivity extends Activity {
                     return true;
                 }
 
+                // 2. When timer is paused, idle, or ended:
+                if (dx > maxMovement || dy > maxMovement || dt > 1500L) {
+                    return super.dispatchTouchEvent(ev);
+                }
+
+                // If touch hit a registered interactive control button while paused/idle, let normal click dispatch occur
+                if (isInteractiveControlTouch(ev)) {
+                    return super.dispatchTouchEvent(ev);
+                }
+
                 // Standard tap anywhere loop (IDLE -> start, PAUSED -> advance to next question)
                 onScreenTapped();
                 return true;
@@ -661,25 +707,18 @@ public class MainActivity extends Activity {
     }
 
     private boolean isInteractiveControlTouch(MotionEvent ev) {
-        // While timer is actively running, tapping anywhere in the upper or lower half
-        // must pause and record outcome. Only bottom utility buttons and active undo banner take precedence.
-        if (currentState.isRunning()) {
-            return isTouchInsideView(btnSettings, ev) ||
-                   isTouchInsideView(btnHistory, ev) ||
-                   isTouchInsideView(btnDiscard, ev) ||
-                   isTouchInsideView(btnToggle, ev) ||
-                   isTouchInsideView(layoutUndoBanner, ev) ||
-                   isTouchInsideView(findViewById(R.id.layoutSessionTitle), ev) ||
-                   isTouchInsideView(tvTarget, ev) ||
-                   isTouchInsideView(tvExamBanner, ev) ||
-                   isTouchInsideView(tvTotalStudyClock, ev);
+        // While timer is actively running, or when resolving a question,
+        // EVERY tap in the upper half = WRONG, and lower half = RIGHT!
+        // No header, title, target, or background button must ever steal the gesture!
+        if (currentState.isRunning() || (currentState == TimerState.PAUSED && manualPauseActive)) {
+            return false;
         }
 
-        // When paused or idle, allow tapping title or target to configure them
-        return isTouchInsideView(btnDiscard, ev) ||
-               isTouchInsideView(btnToggle, ev) ||
+        // When paused or idle, allow interactive buttons, undo banner, title, target, exam banner, and study clock
+        return isTouchInsideView(btnSettings, ev) ||
                isTouchInsideView(btnHistory, ev) ||
-               isTouchInsideView(btnSettings, ev) ||
+               isTouchInsideView(btnDiscard, ev) ||
+               isTouchInsideView(btnToggle, ev) ||
                isTouchInsideView(layoutUndoBanner, ev) ||
                isTouchInsideView(findViewById(R.id.layoutSessionTitle), ev) ||
                isTouchInsideView(tvTarget, ev) ||
@@ -962,14 +1001,19 @@ public class MainActivity extends Activity {
         if (!prefs.getBoolean(SettingsDialog.KEY_HAPTIC_ENABLED, true)) return;
         if (vibrator == null) return;
         try {
+            boolean isWrong = OutcomeClassifier.isWrong(outcome);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (OutcomeClassifier.isWrong(outcome)) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 25, 40, 25}, -1));
+                if (isWrong) {
+                    // Distinct, strong double buzz for wrong on physical devices
+                    long[] timings = new long[]{0, 60, 45, 75};
+                    int[] amplitudes = new int[]{0, 255, 0, 255};
+                    vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1));
                 } else {
-                    vibrator.vibrate(VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE));
+                    // Crisp, decisive positive confirmation click
+                    vibrator.vibrate(VibrationEffect.createOneShot(55, VibrationEffect.DEFAULT_AMPLITUDE));
                 }
             } else {
-                vibrator.vibrate(30);
+                vibrator.vibrate(isWrong ? 100 : 50);
             }
         } catch (Exception ignored) {}
     }

@@ -215,4 +215,53 @@ public class DisplayAndLandscapeSettingsTest {
         Assert.assertEquals("RIPPLE_SCALE", DisplaySettings.EFFECT_STYLE_SCALE);
         Assert.assertEquals("INSTANT_POP", DisplaySettings.EFFECT_STYLE_POP);
     }
+
+    // ==========================================
+    // 9. End Timer Duration & Transition Settings
+    // ==========================================
+
+    @Test
+    public void testEndTimerDurationSettings_defaultsAndMutations() {
+        Assert.assertEquals("end_timer_duration_ms", DisplaySettings.KEY_END_TIMER_DURATION_MS);
+
+        // Verify default duration is 250ms
+        Assert.assertEquals(250, displaySettings.getEndTimerDurationMs());
+
+        // Test mutations
+        displaySettings.setEndTimerDurationMs(150);
+        Assert.assertEquals(150, displaySettings.getEndTimerDurationMs());
+
+        displaySettings.setEndTimerDurationMs(400);
+        Assert.assertEquals(400, displaySettings.getEndTimerDurationMs());
+
+        displaySettings.setEndTimerDurationMs(650);
+        Assert.assertEquals(650, displaySettings.getEndTimerDurationMs());
+
+        // Guard against zero / negative duration
+        displaySettings.setEndTimerDurationMs(0);
+        Assert.assertEquals(250, displaySettings.getEndTimerDurationMs());
+    }
+
+    @Test
+    public void testFullConstructorWithEndTimerDuration() {
+        DisplaySettings custom = new DisplaySettings(
+                false, false, DisplaySettings.POS_TOP_RIGHT, DisplaySettings.FONT_CONDENSED,
+                DisplaySettings.EFFECT_FLASH, DisplaySettings.TRANSITION_SCALE_POP,
+                400, DisplaySettings.TEXT_STYLE_JEE_FOCUS, false,
+                true, 500, DisplaySettings.EFFECT_STYLE_SCALE
+        );
+
+        Assert.assertFalse(custom.isShowStatusHints());
+        Assert.assertFalse(custom.isCleanCountingMode());
+        Assert.assertEquals(DisplaySettings.POS_TOP_RIGHT, custom.getStudyTimerPosition());
+        Assert.assertEquals(DisplaySettings.FONT_CONDENSED, custom.getTimerFontFamily());
+        Assert.assertEquals(DisplaySettings.EFFECT_FLASH, custom.getEndTimerEffect());
+        Assert.assertEquals(DisplaySettings.TRANSITION_SCALE_POP, custom.getEndTimerTransition());
+        Assert.assertEquals(400, custom.getEndTimerDurationMs());
+        Assert.assertEquals(DisplaySettings.TEXT_STYLE_JEE_FOCUS, custom.getEndTimerTextStyle());
+        Assert.assertFalse(custom.isExamBannerEnabled());
+        Assert.assertTrue(custom.isZoneEffectEnabled());
+        Assert.assertEquals(500, custom.getZoneEffectDurationMs());
+        Assert.assertEquals(DisplaySettings.EFFECT_STYLE_SCALE, custom.getZoneEffectStyle());
+    }
 }

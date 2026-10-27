@@ -104,7 +104,9 @@ public class SettingsDialog extends Dialog {
     public static final String KEY_TIMER_FONT = "timer_font_family";
     public static final String KEY_END_TIMER_EFFECT = "end_timer_effect";
     public static final String KEY_END_TIMER_TRANSITION = "end_timer_transition";
+    public static final String KEY_END_TIMER_DURATION_MS = "end_timer_duration_ms";
     public static final String KEY_END_TIMER_TEXT_STYLE = "end_timer_text_style";
+    public static final int DEFAULT_END_TIMER_DURATION_MS = 250;
 
     // Study timer position constants
     public static final String POS_BOTTOM_LEFT = "BOTTOM_LEFT";
@@ -197,7 +199,7 @@ public class SettingsDialog extends Dialog {
     // Display & Layout views
     private Spinner spinnerTimerFont, spinnerStudyTimerPosition;
     private CheckBox cbShowStatusHints, cbCleanCountingMode;
-    private Spinner spinnerEndTimerTransition, spinnerEndTimerEffect, spinnerEndTimerTextStyle;
+    private Spinner spinnerEndTimerTransition, spinnerEndTimerDuration, spinnerEndTimerEffect, spinnerEndTimerTextStyle;
 
     private String currentSizeMode;
     private String currentTheme;
@@ -513,6 +515,29 @@ public class SettingsDialog extends Dialog {
                     break;
                 }
             }
+        }
+
+        spinnerEndTimerDuration = view.findViewById(R.id.spinnerEndTimerDuration);
+        final int[] endTimerDurationValues = {150, 250, 400, 600, 1000};
+        String[] endTimerDurationLabels = {
+                "150 ms (Ultra Fast / Snappy)",
+                "250 ms (Smooth • Default)",
+                "400 ms (Relaxed Pace)",
+                "600 ms (Cinematic)",
+                "1000 ms (Slow Motion)"
+        };
+        ArrayAdapter<String> endTimerDurAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, endTimerDurationLabels);
+        if (spinnerEndTimerDuration != null) {
+            spinnerEndTimerDuration.setAdapter(endTimerDurAdapter);
+            int savedEndDur = prefs.getInt(KEY_END_TIMER_DURATION_MS, DEFAULT_END_TIMER_DURATION_MS);
+            int sel = 1; // Default 250
+            for (int i = 0; i < endTimerDurationValues.length; i++) {
+                if (endTimerDurationValues[i] == savedEndDur) {
+                    sel = i;
+                    break;
+                }
+            }
+            spinnerEndTimerDuration.setSelection(sel);
         }
 
         spinnerEndTimerEffect = view.findViewById(R.id.spinnerEndTimerEffect);
@@ -966,6 +991,15 @@ public class SettingsDialog extends Dialog {
             if (idx >= 0 && idx < transValues.length) selectedTrans = transValues[idx];
         }
 
+        final int[] endTimerDurationValues = {150, 250, 400, 600, 1000};
+        int selectedEndTimerDuration = DEFAULT_END_TIMER_DURATION_MS;
+        if (spinnerEndTimerDuration != null) {
+            int idx = spinnerEndTimerDuration.getSelectedItemPosition();
+            if (idx >= 0 && idx < endTimerDurationValues.length) {
+                selectedEndTimerDuration = endTimerDurationValues[idx];
+            }
+        }
+
         final String[] effectValues = {EFFECT_GLOW_PULSE, EFFECT_FLASH, EFFECT_SUBTLE_BOUNCE, EFFECT_NONE};
         String selectedEffect = EFFECT_GLOW_PULSE;
         if (spinnerEndTimerEffect != null) {
@@ -1008,6 +1042,7 @@ public class SettingsDialog extends Dialog {
                 .putString(KEY_TIMER_FONT, selectedFont)
                 .putString(KEY_STUDY_TIMER_POSITION, selectedPos)
                 .putString(KEY_END_TIMER_TRANSITION, selectedTrans)
+                .putInt(KEY_END_TIMER_DURATION_MS, selectedEndTimerDuration)
                 .putString(KEY_END_TIMER_EFFECT, selectedEffect)
                 .putString(KEY_END_TIMER_TEXT_STYLE, selectedTextStyle)
                 .putBoolean(KEY_SHOW_STATUS_HINTS, showHints)

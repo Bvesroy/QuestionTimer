@@ -237,17 +237,22 @@ public class DisplaySettings implements Serializable {
         return showStatusHints == that.showStatusHints &&
                 cleanCountingMode == that.cleanCountingMode &&
                 examBannerEnabled == that.examBannerEnabled &&
+                zoneEffectEnabled == that.zoneEffectEnabled &&
+                zoneEffectDurationMs == that.zoneEffectDurationMs &&
+                endTimerDurationMs == that.endTimerDurationMs &&
                 Objects.equals(getStudyTimerPosition(), that.getStudyTimerPosition()) &&
                 Objects.equals(getTimerFontFamily(), that.getTimerFontFamily()) &&
                 Objects.equals(getEndTimerEffect(), that.getEndTimerEffect()) &&
                 Objects.equals(getEndTimerTransition(), that.getEndTimerTransition()) &&
-                Objects.equals(getEndTimerTextStyle(), that.getEndTimerTextStyle());
+                Objects.equals(getEndTimerTextStyle(), that.getEndTimerTextStyle()) &&
+                Objects.equals(getZoneEffectStyle(), that.getZoneEffectStyle());
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(showStatusHints, cleanCountingMode, getStudyTimerPosition(),
                 getTimerFontFamily(), getEndTimerEffect(), getEndTimerTransition(),
-                getEndTimerTextStyle(), examBannerEnabled);
+                endTimerDurationMs, getEndTimerTextStyle(), examBannerEnabled,
+                zoneEffectEnabled, zoneEffectDurationMs, getZoneEffectStyle());
     }
 }

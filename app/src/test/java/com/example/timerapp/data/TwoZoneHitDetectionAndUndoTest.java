@@ -295,4 +295,27 @@ public class TwoZoneHitDetectionAndUndoTest {
         Assert.assertEquals(TouchZone.ZONE_LOWER, landDetector.detectZone(400f, 800f));
         Assert.assertEquals(TouchZone.ZONE_LOWER, landDetector.detectZone(1900f, 1079f));
     }
+
+    @Test
+    public void testUpperHalfRecognitionDuringActiveSolvingWithoutHeaderExclusion() {
+        // High density screen (1080 x 2400)
+        TwoZoneHitDetector detector = new TwoZoneHitDetector(1080, 2400);
+        detector.setOrientation(TwoZoneHitDetector.Orientation.VERTICAL);
+
+        // During active solving, bottom controls are excluded (e.g. bottom 200px)
+        detector.addExclusionZone(0, 2200, 1080, 2400);
+
+        // But top header areas (y = 0..300) are NOT excluded so taps anywhere in upper half register as ZONE_UPPER
+        Assert.assertEquals(TouchZone.ZONE_UPPER, detector.detectZone(540f, 80f));  // Title tap area -> Upper / Wrong
+        Assert.assertEquals(TouchZone.ZONE_UPPER, detector.detectZone(540f, 180f)); // Target pill area -> Upper / Wrong
+        Assert.assertEquals(TouchZone.ZONE_UPPER, detector.detectZone(100f, 600f)); // Upper screen -> Upper / Wrong
+        Assert.assertEquals(TouchZone.ZONE_UPPER, detector.detectZone(900f, 1199f)); // Just above midpoint -> Upper / Wrong
+
+        // Lower zone taps
+        Assert.assertEquals(TouchZone.ZONE_LOWER, detector.detectZone(540f, 1200f)); // Midpoint -> Lower / Right
+        Assert.assertEquals(TouchZone.ZONE_LOWER, detector.detectZone(540f, 1800f)); // Lower screen -> Lower / Right
+
+        // Bottom control area is excluded
+        Assert.assertEquals(TouchZone.ZONE_EXCLUDED, detector.detectZone(540f, 2300f));
+    }
 }

@@ -114,23 +114,15 @@ TEST_EXIT_CODE=0
   com.example.timerapp.data.OutcomeTrackingReliabilityTest \
   com.example.timerapp.data.DisplayAndLandscapeSettingsTest || TEST_EXIT_CODE=$?
 
-SWARM_DIR="${SWARM_DIR:-${SWARM_ROOT:-$(cd "$DIR/../Swarm" 2>/dev/null && pwd -P || echo "${HOME:-}/Swarm")}}"
-ARCHIVE_DIR="$SWARM_DIR/metrics/tests"
-mkdir -p "$ARCHIVE_DIR/archive"
-
-if [ -f "$XML_REPORT" ]; then
-  rm -f "$ARCHIVE_DIR/junit-report.xml"
-  cp "$XML_REPORT" "$ARCHIVE_DIR/junit-report.xml"
-  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-  cp "$XML_REPORT" "$ARCHIVE_DIR/archive/junit-report-${TIMESTAMP}.xml"
+ARCHIVE_DIR="${TEST_ARCHIVE_DIR:-$DIR/build-tests}"
+if [ "$ARCHIVE_DIR" != "$DIR/build-tests" ]; then
+  mkdir -p "$ARCHIVE_DIR/archive"
+  if [ -f "$XML_REPORT" ]; then
+    cp "$XML_REPORT" "$ARCHIVE_DIR/junit-report.xml"
+  fi
+  if [ -f "$JSON_REPORT" ]; then
+    cp "$JSON_REPORT" "$ARCHIVE_DIR/test-results.json"
+  fi
+  echo "Archived test results to $ARCHIVE_DIR"
 fi
-
-if [ -f "$JSON_REPORT" ]; then
-  rm -f "$ARCHIVE_DIR/test-results.json"
-  cp "$JSON_REPORT" "$ARCHIVE_DIR/test-results.json"
-  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-  cp "$JSON_REPORT" "$ARCHIVE_DIR/archive/test-results-${TIMESTAMP}.json"
-fi
-
-echo "Archived test results to $ARCHIVE_DIR"
 exit "$TEST_EXIT_CODE"

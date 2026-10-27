@@ -8,18 +8,18 @@ import static org.junit.Assert.*;
 public class SensitiveDataRedactionTest {
 
     @Test
-    public void testOpenAiKeyRedaction() {
+    public void testGenericApiKeyRedaction() {
         String msg = "Error communicating with upstream: key sk-1234567890abcdef1234567890 rejected";
         String cleaned = ReportRunner.sanitizeSensitiveData(msg);
-        assertFalse("Should not contain OpenAI key", cleaned.contains("sk-1234567890abcdef1234567890"));
+        assertFalse("Should not contain API key pattern", cleaned.contains("sk-1234567890abcdef1234567890"));
         assertTrue("Should contain redacted placeholder", cleaned.contains("[REDACTED_API_KEY]"));
     }
 
     @Test
-    public void testGoogleApiKeyRedaction() {
-        String msg = "Firebase error: API key AIzaSyD123456789012345678901234567890 invalid";
+    public void testCloudServiceApiKeyRedaction() {
+        String msg = "Service error: API key AIzaSyD123456789012345678901234567890 invalid";
         String cleaned = ReportRunner.sanitizeSensitiveData(msg);
-        assertFalse("Should not contain Google API key", cleaned.contains("AIzaSyD123456789012345678901234567890"));
+        assertFalse("Should not contain service API key", cleaned.contains("AIzaSyD123456789012345678901234567890"));
         assertTrue("Should contain redacted placeholder", cleaned.contains("[REDACTED_API_KEY]"));
     }
 

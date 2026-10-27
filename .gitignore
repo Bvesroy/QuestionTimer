@@ -8,10 +8,20 @@
 # Build outputs and intermediate binaries
 /build/
 /build-tests/
+/timestorage/
 *.class
 *.dex
-*.apk
 *.idsig
+
+# Intermediate and backup APKs (preserve release distribution APK)
+*.apk
+!release/QuestionTimer.apk
+
+# Python caches and local test runner artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
 
 # OS and IDE files
 .DS_Store
@@ -20,3 +30,4 @@ Thumbs.db
 *.iml
 .gradle/
 /tmp/
+app_bundle_backup_previous.apk

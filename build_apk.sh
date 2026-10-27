@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Physical path resolution resisting symlink traversal
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-SWARM_DIR="${SWARM_DIR:-${SWARM_ROOT:-$(cd "$DIR/../Swarm" 2>/dev/null && pwd -P || echo "${HOME:-}/Swarm")}}"
+METRICS_DIR="${BUILD_METRICS_DIR:-$DIR/build/metrics}"
 
 # Helper function for monotonic time in milliseconds
 mono_ms() {
@@ -14,10 +14,7 @@ BUILD_START_MS=$(mono_ms)
 BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Resolve Active Session ID if present
-ACTIVE_SESSION_ID="${SWARM_SESSION_ID:-}"
-if [ -z "$ACTIVE_SESSION_ID" ] && [ -f "$SWARM_DIR/metrics/.active_session.json" ]; then
-    ACTIVE_SESSION_ID=$(python3 -c "import json; print(json.load(open('$SWARM_DIR/metrics/.active_session.json')).get('session_id', ''))" 2>/dev/null || echo "")
-fi
+ACTIVE_SESSION_ID="${BUILD_SESSION_ID:-}"
 
 # Track stages and durations for reconciliation and failure recovery
 CURRENT_STAGE="init"
@@ -134,7 +131,7 @@ metrics_data = {
     "artifact": None
 }
 
-builds_dir = Path(os.environ.get("SWARM_METRICS_BUILDS_DIR", "${SWARM_DIR}/metrics/builds"))
+builds_dir = Path(os.environ.get("BUILD_METRICS_DIR", "${METRICS_DIR}"))
 builds_dir.mkdir(parents=True, exist_ok=True)
 
 latest_path = builds_dir / "latest.json"
@@ -153,11 +150,6 @@ if sid:
 
 print(f"Failure metrics recorded in {latest_path}")
 EOF
-
-    COLLECTOR_SCRIPT="${SWARM_DIR}/metrics/collector.py"
-    if [ -f "$COLLECTOR_SCRIPT" ] && [ -n "${ACTIVE_SESSION_ID:-}" ]; then
-        python3 "$COLLECTOR_SCRIPT" record-build --session-id "$ACTIVE_SESSION_ID" --build-file "${SWARM_DIR}/metrics/builds/latest.json" 2>/dev/null || true
-    fi
 
     exit "$exit_code"
 }
@@ -531,7 +523,7 @@ echo "Total Time:  ${TOTAL_DURATION_MS}ms"
 echo "Stages Time: ${STAGES_TOTAL_MS}ms"
 echo "Overhead:    ${UNINSTRUMENTED_OVERHEAD_MS}ms"
 
-# Export structured build telemetry to Swarm metrics
+# Export structured build telemetry
 python3 - <<EOF
 import json
 import os
@@ -619,7 +611,7 @@ metrics_data = {
     }
 }
 
-builds_dir = Path(os.environ.get("SWARM_METRICS_BUILDS_DIR", "${SWARM_DIR}/metrics/builds"))
+builds_dir = Path(os.environ.get("BUILD_METRICS_DIR", "${METRICS_DIR}"))
 builds_dir.mkdir(parents=True, exist_ok=True)
 
 # Atomic write to latest.json
@@ -640,10 +632,3 @@ if sid:
 
 print(f"Metrics written to {latest_path}")
 EOF
-
-# Notify active Swarm session collector if running
-COLLECTOR_SCRIPT="${SWARM_DIR}/metrics/collector.py"
-if [ -f "$COLLECTOR_SCRIPT" ] && [ -n "$ACTIVE_SESSION_ID" ]; then
-    python3 "$COLLECTOR_SCRIPT" record-build --session-id "$ACTIVE_SESSION_ID" --build-file "${SWARM_DIR}/metrics/builds/latest.json" 2>/dev/null || true
-    python3 "$COLLECTOR_SCRIPT" record-artifact --session-id "$ACTIVE_SESSION_ID" --path "$RELEASE_APK" --verified 2>/dev/null || true
-fi

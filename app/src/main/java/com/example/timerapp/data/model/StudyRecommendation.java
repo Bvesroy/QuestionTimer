@@ -57,7 +57,7 @@ public class StudyRecommendation implements Serializable {
                 "Less than 5 questions or fewer than 2 sessions logged in the selected window.",
                 timeframe,
                 sampleSize,
-                "Complete at least 2 sessions with 5+ questions to unlock personalized AI coach insights.",
+                "Complete at least 2 sessions with 5+ questions to unlock personalized coach insights.",
                 "Statistical confidence requires a baseline sample size to avoid false trend correlations.",
                 ConfidenceLevel.LOW,
                 false

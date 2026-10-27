@@ -480,9 +480,9 @@ public class ReportRunner {
             return "";
         }
         String sanitized = text;
-        // Redact OpenAI / Anthropic / Generic API keys
+        // Redact standard upstream API keys (sk- format)
         sanitized = sanitized.replaceAll("(?i)(?:sk-[A-Za-z0-9_-]{20,})", "[REDACTED_API_KEY]");
-        // Redact Google / Firebase API keys
+        // Redact cloud provider service keys (AIza format)
         sanitized = sanitized.replaceAll("AIza[0-9A-Za-z-_]{30,40}", "[REDACTED_API_KEY]");
         // Redact GitHub Personal Access Tokens
         sanitized = sanitized.replaceAll("(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82})", "[REDACTED_TOKEN]");

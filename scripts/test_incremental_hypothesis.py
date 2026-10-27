@@ -68,7 +68,7 @@ def run_clean_build() -> Dict[str, Any]:
     res = subprocess.run(cmd, env=ENV, cwd=str(DIR), capture_output=True, text=True, timeout=60)
     t_end = mono_ms()
 
-    latest_json = Path("/Users/jeemainsadv/Swarm/metrics/builds/latest.json")
+    latest_json = DIR / "build" / "metrics" / "latest.json"
     metrics = {}
     if latest_json.exists():
         try:
@@ -555,7 +555,7 @@ def main():
         print(f"{t:<6} | {sc:<34} | {bj:>8}ms | {cj:>8}ms | {bd:>6}ms | {cd:>6}ms | {bt:>8}ms | {ct:>8}ms | {sp:>8}")
 
     # Output experiment JSON
-    exp_out = Path("/Users/jeemainsadv/Swarm/metrics/benchmarks/incremental_experiment_results.json")
+    exp_out = DIR / "build" / "metrics" / "benchmarks" / "incremental_experiment_results.json"
     exp_out.parent.mkdir(parents=True, exist_ok=True)
     with open(exp_out, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)

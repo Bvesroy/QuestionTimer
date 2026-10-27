@@ -972,7 +972,7 @@
                 </LinearLayout>
 
                 <!-- =========================================== -->
-                <!-- OFFLINE STUDY COACH (AI RECOMMENDATIONS)    -->
+                <!-- OFFLINE STUDY COACH (SMART RECOMMENDATIONS)    -->
                 <!-- =========================================== -->
                 <LinearLayout
                     android:layout_width="match_parent"

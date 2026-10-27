@@ -41,6 +41,8 @@ import android.widget.Toast;
 import com.example.timerapp.R;
 import com.example.timerapp.data.SessionStorage;
 import com.example.timerapp.data.backup.SafBackupEngine;
+import com.example.timerapp.data.engine.TwoZoneHitDetector;
+import com.example.timerapp.data.engine.TwoZoneHitDetector.TouchZone;
 import com.example.timerapp.model.QuestionLog;
 import com.example.timerapp.model.TimerSession;
 import com.example.timerapp.model.TimerState;
@@ -335,7 +337,13 @@ public class MainActivity extends Activity {
      */
     private void setupGestureDetector() {
         rootContainer.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_UP) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (isTouchInsideView(topBarContainer, event) ||
+                    isTouchInsideView(bottomControlsContainer, event) ||
+                    isTouchInsideView(layoutUndoBanner, event)) {
+                    return false;
+                }
+            } else if (event.getAction() == MotionEvent.ACTION_UP) {
                 // Ignore touches on interactive top/bottom bars or undo banner
                 if (isTouchInsideView(topBarContainer, event) ||
                     isTouchInsideView(bottomControlsContainer, event) ||
@@ -345,12 +353,17 @@ public class MainActivity extends Activity {
 
                 // Two-Zone Answer Recording when timer is actively running
                 if (isTwoZoneRecordingEnabled && currentState.isRunning()) {
-                    int height = rootContainer.getHeight();
-                    int midY = height / 2;
-                    float tapY = event.getY();
-                    String outcome = (tapY < midY) ? "INCORRECT" : "SOLVED";
-                    recordTwoZoneOutcome(outcome);
-                    return true;
+                    int width = Math.max(1, rootContainer.getWidth());
+                    int height = Math.max(1, rootContainer.getHeight());
+                    TwoZoneHitDetector detector = new TwoZoneHitDetector(width, height);
+                    TouchZone zone = detector.detectVerticalZone(event.getX(), event.getY());
+                    if (zone == TouchZone.ZONE_UPPER) {
+                        recordTwoZoneOutcome("INCORRECT");
+                        return true;
+                    } else if (zone == TouchZone.ZONE_LOWER) {
+                        recordTwoZoneOutcome("SOLVED");
+                        return true;
+                    }
                 }
 
                 onScreenTapped();
@@ -599,7 +612,7 @@ public class MainActivity extends Activity {
     private void handleManualToggle() {
         triggerTapFeedback();
         lastInteractionRealtime = SystemClock.elapsedRealtime();
-        if (currentState == TimerState.RUNNING) {
+        if (currentState.isRunning()) {
             pauseAndRecordQuestion();
         } else if (currentState == TimerState.PAUSED) {
             advanceAndStartNextQuestion();
@@ -652,7 +665,7 @@ public class MainActivity extends Activity {
 
     private void startBreak() {
         if (isBreakActive) return;
-        if (currentState == TimerState.RUNNING) {
+        if (currentState.isRunning()) {
             pauseAndRecordQuestion();
         }
         if (sessionStudyStartRealtime > 0) {
@@ -737,7 +750,7 @@ public class MainActivity extends Activity {
 
     private void handleDiscardCurrentQuestion() {
         triggerTapFeedback();
-        long currentElapsed = (currentState == TimerState.RUNNING)
+        long currentElapsed = (currentState.isRunning())
                 ? (SystemClock.elapsedRealtime() - startTimeRealtime)
                 : accumulatedElapsedMs;
         if (currentState == TimerState.IDLE && currentElapsed == 0L) {
@@ -1363,7 +1376,7 @@ public class MainActivity extends Activity {
     private void createNewSession() {
         TimerSession prevSession = currentSession;
         // Pause timer if running
-        if (currentState == TimerState.RUNNING) {
+        if (currentState.isRunning()) {
             timerHandler.removeCallbacks(timerTicker);
             currentState = TimerState.IDLE;
         }
@@ -1397,7 +1410,7 @@ public class MainActivity extends Activity {
     private void switchSession(TimerSession session) {
         if (session == null || session.getId() == currentSession.getId()) return;
 
-        if (currentState == TimerState.RUNNING) {
+        if (currentState.isRunning()) {
             timerHandler.removeCallbacks(timerTicker);
             currentState = TimerState.IDLE;
         }
@@ -1406,7 +1419,7 @@ public class MainActivity extends Activity {
         accumulatedStudyDurationMs = session.getTotalStudyDurationMs();
         accumulatedBreakDurationMs = session.getTotalBreakDurationMs();
         isBreakActive = session.isOnBreak();
-        sessionStudyStartRealtime = (currentState == TimerState.RUNNING && !isBreakActive) ? SystemClock.elapsedRealtime() : 0L;
+        sessionStudyStartRealtime = (currentState.isRunning() && !isBreakActive) ? SystemClock.elapsedRealtime() : 0L;
         persistSessions();
         renderUi();
     }
@@ -1444,7 +1457,7 @@ public class MainActivity extends Activity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putSerializable("TIMER_STATE", currentState);
-        outState.putLong("ACCUMULATED_MS", (currentState == TimerState.RUNNING)
+        outState.putLong("ACCUMULATED_MS", (currentState.isRunning())
                 ? (SystemClock.elapsedRealtime() - startTimeRealtime)
                 : accumulatedElapsedMs);
         outState.putLong("ACTIVE_SESSION_ID", currentSession != null ? currentSession.getId() : -1);
@@ -1473,7 +1486,7 @@ public class MainActivity extends Activity {
         lastDiscardedQuestionElapsedMs = savedInstanceState.getLong("LAST_DISCARDED_MS", 0L);
         canUndoReset = savedInstanceState.getBoolean("CAN_UNDO_RESET", false);
 
-        if (currentState == TimerState.RUNNING) {
+        if (currentState.isRunning()) {
             startTimeRealtime = SystemClock.elapsedRealtime() - accumulatedElapsedMs;
             timerHandler.post(timerTicker);
         }
@@ -1489,7 +1502,7 @@ public class MainActivity extends Activity {
         super.onUserLeaveHint();
         SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
         boolean autoPip = prefs.getBoolean(SettingsDialog.KEY_AUTO_PIP, true);
-        if (autoPip && currentState == TimerState.RUNNING && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (autoPip && currentState.isRunning() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             enterPiPMode();
         }
     }

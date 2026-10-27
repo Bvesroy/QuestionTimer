@@ -17,6 +17,7 @@ public class DisplaySettings implements Serializable {
     public static final String KEY_TIMER_FONT = "timer_font_family";
     public static final String KEY_END_TIMER_EFFECT = "end_timer_effect";
     public static final String KEY_END_TIMER_TRANSITION = "end_timer_transition";
+    public static final String KEY_END_TIMER_DURATION_MS = "end_timer_duration_ms";
     public static final String KEY_END_TIMER_TEXT_STYLE = "end_timer_text_style";
     public static final String KEY_EXAM_BANNER_ENABLED = "exam_banner_enabled";
 
@@ -69,6 +70,7 @@ public class DisplaySettings implements Serializable {
     private String timerFontFamily;
     private String endTimerEffect;
     private String endTimerTransition;
+    private int endTimerDurationMs;
     private String endTimerTextStyle;
     private boolean examBannerEnabled;
     private boolean zoneEffectEnabled;
@@ -82,6 +84,7 @@ public class DisplaySettings implements Serializable {
         this.timerFontFamily = FONT_MONOSPACE;
         this.endTimerEffect = EFFECT_GLOW_PULSE;
         this.endTimerTransition = TRANSITION_SMOOTH_FADE;
+        this.endTimerDurationMs = 250;
         this.endTimerTextStyle = TEXT_STYLE_STANDARD;
         this.examBannerEnabled = true;
         this.zoneEffectEnabled = true;
@@ -94,7 +97,7 @@ public class DisplaySettings implements Serializable {
                            String endTimerEffect, String endTimerTransition,
                            String endTimerTextStyle, boolean examBannerEnabled) {
         this(showStatusHints, cleanCountingMode, studyTimerPosition, timerFontFamily,
-             endTimerEffect, endTimerTransition, endTimerTextStyle, examBannerEnabled,
+             endTimerEffect, endTimerTransition, 250, endTimerTextStyle, examBannerEnabled,
              true, 300, EFFECT_STYLE_FADE);
     }
 
@@ -104,12 +107,25 @@ public class DisplaySettings implements Serializable {
                            String endTimerTextStyle, boolean examBannerEnabled,
                            boolean zoneEffectEnabled, int zoneEffectDurationMs,
                            String zoneEffectStyle) {
+        this(showStatusHints, cleanCountingMode, studyTimerPosition, timerFontFamily,
+             endTimerEffect, endTimerTransition, 250, endTimerTextStyle, examBannerEnabled,
+             zoneEffectEnabled, zoneEffectDurationMs, zoneEffectStyle);
+    }
+
+    public DisplaySettings(boolean showStatusHints, boolean cleanCountingMode,
+                           String studyTimerPosition, String timerFontFamily,
+                           String endTimerEffect, String endTimerTransition,
+                           int endTimerDurationMs,
+                           String endTimerTextStyle, boolean examBannerEnabled,
+                           boolean zoneEffectEnabled, int zoneEffectDurationMs,
+                           String zoneEffectStyle) {
         this.showStatusHints = showStatusHints;
         this.cleanCountingMode = cleanCountingMode;
         this.studyTimerPosition = (studyTimerPosition != null) ? studyTimerPosition : POS_BOTTOM_LEFT;
         this.timerFontFamily = (timerFontFamily != null) ? timerFontFamily : FONT_MONOSPACE;
         this.endTimerEffect = (endTimerEffect != null) ? endTimerEffect : EFFECT_GLOW_PULSE;
         this.endTimerTransition = (endTimerTransition != null) ? endTimerTransition : TRANSITION_SMOOTH_FADE;
+        this.endTimerDurationMs = (endTimerDurationMs > 0) ? endTimerDurationMs : 250;
         this.endTimerTextStyle = (endTimerTextStyle != null) ? endTimerTextStyle : TEXT_STYLE_STANDARD;
         this.examBannerEnabled = examBannerEnabled;
         this.zoneEffectEnabled = zoneEffectEnabled;
@@ -163,6 +179,14 @@ public class DisplaySettings implements Serializable {
 
     public void setEndTimerTransition(String endTimerTransition) {
         this.endTimerTransition = (endTimerTransition != null) ? endTimerTransition : TRANSITION_SMOOTH_FADE;
+    }
+
+    public int getEndTimerDurationMs() {
+        return endTimerDurationMs;
+    }
+
+    public void setEndTimerDurationMs(int endTimerDurationMs) {
+        this.endTimerDurationMs = (endTimerDurationMs > 0) ? endTimerDurationMs : 250;
     }
 
     public String getEndTimerTextStyle() {

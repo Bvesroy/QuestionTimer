@@ -41,7 +41,7 @@ adb install -r release/QuestionTimer.apk
 ### Method 3: Build From Source (For Parrots Who Don't Trust Pre-builts) 🛠️
 No Gradle daemon eating 8 GB of RAM required. We built a lightning-fast standalone direct compiler:
 ```bash
-git clone https://github.com/YOUR_USERNAME/QuestionTimer.git
+git clone https://github.com/Bvesroy/QuestionTimer.git
 cd QuestionTimer
 ./run_tests.sh    # Executes all 159 unit tests in ~60ms
 ./build_apk.sh    # Direct compilation, D8 desugaring & v2/v3 signing in ~3s

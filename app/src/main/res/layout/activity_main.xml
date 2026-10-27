@@ -128,25 +128,6 @@
             android:textColor="@color/text_secondary"
             android:textSize="@dimen/text_badge" />
 
-        <!-- Total Study Clock & Break Indicator -->
-        <TextView
-            android:id="@+id/tvTotalStudyClock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:fontFamily="monospace"
-            android:letterSpacing="0.08"
-            android:paddingStart="12dp"
-            android:paddingTop="4dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="4dp"
-            android:text="STUDY: 00:00:00 • BREAK: 00:00"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
         <!-- Live Outcome Performance Analytics KPI Display -->
         <TextView
             android:id="@+id/tvLiveAnalytics"
@@ -163,6 +144,28 @@
             tools:visibility="visible" />
 
     </LinearLayout>
+
+    <!-- Total Study Clock & Break Indicator (Positioned in corner or configured via settings) -->
+    <TextView
+        android:id="@+id/tvTotalStudyClock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="96dp"
+        android:background="@drawable/bg_pill"
+        android:clickable="true"
+        android:focusable="true"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.08"
+        android:paddingStart="12dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="4dp"
+        android:text="STUDY: 00:00:00 • BREAK: 00:00"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
 
     <!-- Transient Undo Notification Banner -->
     <LinearLayout

@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -27,6 +28,9 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.WindowManager;
@@ -35,6 +39,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -190,8 +195,10 @@ public class MainActivity extends Activity {
         setupGestureDetector();
         applyImmersiveMode();
         applyTheme();
-        updateExamBanner();
+        applyTimerFont();
         applyTimerSize();
+        applyStudyTimerPosition();
+        updateExamBanner();
         renderUi();
         handleWidgetActions(getIntent());
     }
@@ -217,7 +224,10 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         applyImmersiveMode();
+        applyTimerFont();
         applyTimerSize();
+        applyStudyTimerPosition();
+        updateExamBanner();
     }
 
     @Override
@@ -252,6 +262,7 @@ public class MainActivity extends Activity {
     }
 
     private void initViews() {
+        controlsAreVisible = true;
         rootContainer = findViewById(R.id.rootContainer);
         topBarContainer = findViewById(R.id.topBarContainer);
         bottomControlsContainer = findViewById(R.id.bottomControlsContainer);
@@ -322,6 +333,226 @@ public class MainActivity extends Activity {
     }
 
     /**
+     * Applies user-selected font family to the timer countdown readout.
+     */
+    private void applyTimerFont() {
+        if (tvTimerReadout == null) return;
+        SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+        String fontChoice = prefs.getString(SettingsDialog.KEY_TIMER_FONT, SettingsDialog.FONT_MONOSPACE);
+        Typeface tf;
+        switch (fontChoice) {
+            case SettingsDialog.FONT_SANS_SERIF_BOLD:
+                tf = Typeface.create("sans-serif", Typeface.BOLD);
+                break;
+            case SettingsDialog.FONT_CONDENSED:
+                tf = Typeface.create("sans-serif-condensed", Typeface.BOLD);
+                break;
+            case SettingsDialog.FONT_SERIF:
+                tf = Typeface.create("serif", Typeface.BOLD);
+                break;
+            case SettingsDialog.FONT_LIGHT:
+                tf = Typeface.create("sans-serif-light", Typeface.NORMAL);
+                break;
+            case SettingsDialog.FONT_MONOSPACE:
+            default:
+                tf = Typeface.MONOSPACE;
+                break;
+        }
+        tvTimerReadout.setTypeface(tf);
+    }
+
+    /**
+     * Dynamically positions the Total Study Clock in the user-selected screen corner
+     * (Bottom-Left, Bottom-Right, Top-Left, Top-Right, Center, or Hidden).
+     */
+    private void applyStudyTimerPosition() {
+        if (tvTotalStudyClock == null) return;
+        SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+        String position = prefs.getString(SettingsDialog.KEY_STUDY_TIMER_POSITION, SettingsDialog.POS_BOTTOM_LEFT);
+
+        if (SettingsDialog.POS_HIDDEN.equals(position)) {
+            tvTotalStudyClock.setVisibility(View.GONE);
+            return;
+        } else {
+            tvTotalStudyClock.setVisibility(View.VISIBLE);
+        }
+
+        boolean isLandscape = (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+        );
+
+        float density = getResources().getDisplayMetrics().density;
+        int m16 = (int) (16 * density);
+        int m20 = (int) (20 * density);
+        int m48 = (int) (48 * density);
+        int m96 = (int) (96 * density);
+
+        switch (position) {
+            case SettingsDialog.POS_BOTTOM_RIGHT:
+                params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+                params.addRule(RelativeLayout.ALIGN_PARENT_END);
+                params.setMargins(0, 0, m20, isLandscape ? m16 : m96);
+                break;
+            case SettingsDialog.POS_TOP_LEFT:
+                params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+                params.addRule(RelativeLayout.ALIGN_PARENT_START);
+                params.setMargins(m20, isLandscape ? m16 : m48, 0, 0);
+                break;
+            case SettingsDialog.POS_TOP_RIGHT:
+                params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+                params.addRule(RelativeLayout.ALIGN_PARENT_END);
+                params.setMargins(0, isLandscape ? m16 : m48, m20, 0);
+                break;
+            case SettingsDialog.POS_BOTTOM_CENTER:
+                params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+                params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                params.setMargins(0, 0, 0, isLandscape ? m16 : m96);
+                break;
+            case SettingsDialog.POS_CENTER:
+                params.addRule(RelativeLayout.BELOW, R.id.centerContainer);
+                params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                params.setMargins(0, (int) (8 * density), 0, 0);
+                break;
+            case SettingsDialog.POS_BOTTOM_LEFT:
+            default:
+                params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+                params.addRule(RelativeLayout.ALIGN_PARENT_START);
+                params.setMargins(m20, 0, 0, isLandscape ? m16 : m96);
+                break;
+        }
+
+        tvTotalStudyClock.setLayoutParams(params);
+    }
+
+    /**
+     * Executes configurable visual effects and transition animations when a question ends or pauses.
+     */
+    private void triggerEndTimerEffects() {
+        SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+        String effect = prefs.getString(SettingsDialog.KEY_END_TIMER_EFFECT, SettingsDialog.EFFECT_GLOW_PULSE);
+        String transition = prefs.getString(SettingsDialog.KEY_END_TIMER_TRANSITION, SettingsDialog.TRANSITION_SMOOTH_FADE);
+
+        // 1. Transition Animation on tvTimerReadout
+        if (tvTimerReadout != null) {
+            switch (transition) {
+                case SettingsDialog.TRANSITION_SCALE_POP:
+                    tvTimerReadout.setScaleX(0.85f);
+                    tvTimerReadout.setScaleY(0.85f);
+                    tvTimerReadout.animate()
+                            .scaleX(1.0f)
+                            .scaleY(1.0f)
+                            .setInterpolator(new OvershootInterpolator(2.2f))
+                            .setDuration(320L)
+                            .start();
+                    break;
+                case SettingsDialog.TRANSITION_SLIDE_DOWN:
+                    tvTimerReadout.setTranslationY(-32f);
+                    tvTimerReadout.setAlpha(0.3f);
+                    tvTimerReadout.animate()
+                            .translationY(0f)
+                            .alpha(1.0f)
+                            .setInterpolator(new DecelerateInterpolator())
+                            .setDuration(260L)
+                            .start();
+                    break;
+                case SettingsDialog.TRANSITION_INSTANT:
+                    tvTimerReadout.setAlpha(1.0f);
+                    tvTimerReadout.setScaleX(1.0f);
+                    tvTimerReadout.setScaleY(1.0f);
+                    tvTimerReadout.setTranslationY(0f);
+                    break;
+                case SettingsDialog.TRANSITION_SMOOTH_FADE:
+                default:
+                    tvTimerReadout.setAlpha(0.35f);
+                    tvTimerReadout.animate()
+                            .alpha(1.0f)
+                            .setDuration(250L)
+                            .start();
+                    break;
+            }
+        }
+
+        // 2. Visual end effect
+        if (SettingsDialog.EFFECT_GLOW_PULSE.equals(effect) && tvTimerReadout != null) {
+            tvTimerReadout.animate()
+                    .scaleX(1.08f)
+                    .scaleY(1.08f)
+                    .setDuration(160L)
+                    .withEndAction(() -> {
+                        if (tvTimerReadout != null) {
+                            tvTimerReadout.animate()
+                                    .scaleX(1.0f)
+                                    .scaleY(1.0f)
+                                    .setDuration(200L)
+                                    .start();
+                        }
+                    })
+                    .start();
+        } else if (SettingsDialog.EFFECT_FLASH.equals(effect)) {
+            if (rootContainer != null) {
+                int accentColor = ThemeManager.getAccentColor(this);
+                int flashColor = Color.argb(45, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor));
+                rootContainer.setBackgroundColor(flashColor);
+                rootContainer.postDelayed(() -> {
+                    if (rootContainer != null) {
+                        rootContainer.setBackgroundColor(ThemeManager.getBackgroundColor(this));
+                    }
+                }, 150L);
+            }
+        } else if (SettingsDialog.EFFECT_SUBTLE_BOUNCE.equals(effect) && tvTimerReadout != null) {
+            tvTimerReadout.animate()
+                    .scaleX(1.04f)
+                    .scaleY(1.04f)
+                    .setDuration(120L)
+                    .withEndAction(() -> {
+                        if (tvTimerReadout != null) {
+                            tvTimerReadout.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120L).start();
+                        }
+                    })
+                    .start();
+        }
+    }
+
+    /**
+     * Formats the pause cue message according to the user-selected End Timer Text style.
+     */
+    private String formatEndTimerText(boolean isWrong, String outcomeLabel, String scoreDelta, int nextQ) {
+        SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+        String textStyle = prefs.getString(SettingsDialog.KEY_END_TIMER_TEXT_STYLE, SettingsDialog.TEXT_STYLE_STANDARD);
+
+        switch (textStyle) {
+            case SettingsDialog.TEXT_STYLE_JEE_FOCUS:
+                if (isTwoZoneRecordingEnabled) {
+                    return String.format(Locale.ROOT, "%s (%s PTS) • NEXT Q%d", outcomeLabel, scoreDelta, nextQ);
+                }
+                return String.format(Locale.ROOT, "QUESTION %d DONE • NEXT Q%d", nextQ - 1, nextQ);
+
+            case SettingsDialog.TEXT_STYLE_MINIMAL:
+                if (isTwoZoneRecordingEnabled) {
+                    return String.format(Locale.ROOT, "%s • %s PTS", outcomeLabel, scoreDelta);
+                }
+                return "PAUSED";
+
+            case SettingsDialog.TEXT_STYLE_ENCOURAGING:
+                if (isTwoZoneRecordingEnabled) {
+                    return isWrong
+                            ? String.format(Locale.ROOT, "REVIEW Q%d • KEEP PUSHING!", nextQ - 1)
+                            : String.format(Locale.ROOT, "EXCELLENT! +4 PTS • SOLVE Q%d", nextQ);
+                }
+                return "GREAT PACE • TAP FOR NEXT";
+
+            case SettingsDialog.TEXT_STYLE_STANDARD:
+            default:
+                if (isTwoZoneRecordingEnabled) {
+                    return String.format(Locale.ROOT, "%s (%s PTS) • TAP FOR Q%d", outcomeLabel, scoreDelta, nextQ);
+                }
+                return getString(R.string.badge_paused);
+        }
+    }
+
+    /**
      * Configures the full-screen tap-anywhere gesture loop while ignoring touches on interactive controls.
      * When RUNNING, the entire screen acts as an instant pause & record tap target.
      */
@@ -340,13 +571,15 @@ public class MainActivity extends Activity {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 if (isTouchInsideView(topBarContainer, event) ||
                     isTouchInsideView(bottomControlsContainer, event) ||
+                    isTouchInsideView(tvTotalStudyClock, event) ||
                     isTouchInsideView(layoutUndoBanner, event)) {
                     return false;
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                // Ignore touches on interactive top/bottom bars or undo banner
+                // Ignore touches on interactive top/bottom bars, study clock or undo banner
                 if (isTouchInsideView(topBarContainer, event) ||
                     isTouchInsideView(bottomControlsContainer, event) ||
+                    isTouchInsideView(tvTotalStudyClock, event) ||
                     isTouchInsideView(layoutUndoBanner, event)) {
                     return false;
                 }
@@ -470,6 +703,7 @@ public class MainActivity extends Activity {
 
         updateWidgets();
         renderUi();
+        triggerEndTimerEffects();
 
         // Target check
         if (currentSession != null) {
@@ -583,6 +817,7 @@ public class MainActivity extends Activity {
 
         updateWidgets();
         renderUi();
+        triggerEndTimerEffects();
 
         // Check if target questions goal is reached
         int target = currentSession.getTarget();
@@ -877,12 +1112,23 @@ public class MainActivity extends Activity {
         controlsAreVisible = visible;
         long duration = animate ? 250L : 0L;
 
+        SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+        boolean cleanCountingMode = prefs.getBoolean(SettingsDialog.KEY_CLEAN_COUNTING_MODE, true);
+
         if (visible) {
             bottomControlsContainer.setVisibility(View.VISIBLE);
             bottomControlsContainer.animate()
                     .alpha(1.0f)
                     .setDuration(duration)
                     .start();
+
+            if (topBarContainer != null && cleanCountingMode) {
+                topBarContainer.setVisibility(View.VISIBLE);
+                topBarContainer.animate()
+                        .alpha(1.0f)
+                        .setDuration(duration)
+                        .start();
+            }
         } else {
             bottomControlsContainer.animate()
                     .alpha(0.0f)
@@ -893,6 +1139,18 @@ public class MainActivity extends Activity {
                         }
                     })
                     .start();
+
+            if (topBarContainer != null && cleanCountingMode) {
+                topBarContainer.animate()
+                        .alpha(0.0f)
+                        .setDuration(duration)
+                        .withEndAction(() -> {
+                            if (!controlsAreVisible && topBarContainer != null) {
+                                topBarContainer.setVisibility(View.INVISIBLE);
+                            }
+                        })
+                        .start();
+            }
         }
 
         // Enable/disable touch reception on buttons
@@ -952,11 +1210,12 @@ public class MainActivity extends Activity {
                     String scoreDelta = isWrong ? ("-" + (int) penalty) : "+4";
                     String outcomeLabel = isWrong ? "WRONG" : "RIGHT";
                     int nextQ = (currentSession != null) ? currentSession.getCurrentQuestion() : 2;
-                    tvStateBadge.setText(String.format(Locale.ROOT, "%s (%s PTS) • TAP FOR Q%d", outcomeLabel, scoreDelta, nextQ));
+                    tvStateBadge.setText(formatEndTimerText(isWrong, outcomeLabel, scoreDelta, nextQ));
                     tvStateBadge.setBackgroundResource(isWrong ? R.drawable.bg_pill_orange : R.drawable.bg_pill_accent);
                     tvStateBadge.setTextColor(isWrong ? Color.parseColor("#FF9F0A") : accentColor);
                 } else {
-                    tvStateBadge.setText(R.string.badge_paused);
+                    int nextQ = (currentSession != null) ? (currentSession.getCurrentQuestion() + 1) : 2;
+                    tvStateBadge.setText(formatEndTimerText(false, "PAUSED", "0", nextQ));
                     tvStateBadge.setBackgroundResource(R.drawable.bg_pill_orange);
                     tvStateBadge.setTextColor(Color.parseColor("#FF9F0A"));
                 }
@@ -979,6 +1238,13 @@ public class MainActivity extends Activity {
                 break;
             default:
                 break;
+        }
+
+        // Status Hints Visibility
+        SharedPreferences prefs = getSharedPreferences(SettingsDialog.PREFS_NAME, Context.MODE_PRIVATE);
+        boolean showHints = prefs.getBoolean(SettingsDialog.KEY_SHOW_STATUS_HINTS, true);
+        if (tvStateBadge != null) {
+            tvStateBadge.setVisibility(showHints ? View.VISIBLE : View.GONE);
         }
 
         // Manage auto-hiding controls based on state
@@ -1107,6 +1373,15 @@ public class MainActivity extends Activity {
             @Override
             public void onRestoreBackupRequested() {
                 restoreSafBackup();
+            }
+
+            @Override
+            public void onDisplaySettingsChanged() {
+                applyTimerFont();
+                applyTimerSize();
+                applyStudyTimerPosition();
+                updateExamBanner();
+                renderUi();
             }
         });
         dialog.show();
@@ -1450,8 +1725,15 @@ public class MainActivity extends Activity {
         // Seamlessly re-apply immersive flags on rotation
         applyImmersiveMode();
 
-        // Dynamically adjust timer readout font size and margins for portrait vs landscape
+        setContentView(R.layout.activity_main);
+        initViews();
+        setupGestureDetector();
+        applyTheme();
+        applyTimerFont();
         applyTimerSize();
+        applyStudyTimerPosition();
+        updateExamBanner();
+        renderUi();
     }
 
     @Override

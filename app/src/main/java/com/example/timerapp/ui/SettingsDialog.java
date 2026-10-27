@@ -53,6 +53,7 @@ public class SettingsDialog extends Dialog {
         default void onChooseBackupFolderRequested() {}
         default void onBackupNowRequested() {}
         default void onRestoreBackupRequested() {}
+        default void onDisplaySettingsChanged() {}
     }
 
     public static final String PREFS_NAME = "question_timer_prefs";
@@ -83,6 +84,49 @@ public class SettingsDialog extends Dialog {
 
     public static final String KEY_SAF_BACKUP_PATH = "saf_backup_folder_path";
     public static final String KEY_SAF_BACKUP_URI = "saf_backup_folder_uri";
+
+    // Display & Layout Settings Keys
+    public static final String KEY_SHOW_STATUS_HINTS = "show_status_hints";
+    public static final String KEY_CLEAN_COUNTING_MODE = "clean_counting_mode";
+    public static final String KEY_STUDY_TIMER_POSITION = "study_timer_position";
+    public static final String KEY_TIMER_FONT = "timer_font_family";
+    public static final String KEY_END_TIMER_EFFECT = "end_timer_effect";
+    public static final String KEY_END_TIMER_TRANSITION = "end_timer_transition";
+    public static final String KEY_END_TIMER_TEXT_STYLE = "end_timer_text_style";
+
+    // Study timer position constants
+    public static final String POS_BOTTOM_LEFT = "BOTTOM_LEFT";
+    public static final String POS_BOTTOM_RIGHT = "BOTTOM_RIGHT";
+    public static final String POS_TOP_LEFT = "TOP_LEFT";
+    public static final String POS_TOP_RIGHT = "TOP_RIGHT";
+    public static final String POS_BOTTOM_CENTER = "BOTTOM_CENTER";
+    public static final String POS_CENTER = "CENTER";
+    public static final String POS_HIDDEN = "HIDDEN";
+
+    // Timer font family constants
+    public static final String FONT_MONOSPACE = "MONOSPACE";
+    public static final String FONT_SANS_SERIF_BOLD = "SANS_SERIF_BOLD";
+    public static final String FONT_CONDENSED = "CONDENSED";
+    public static final String FONT_SERIF = "SERIF";
+    public static final String FONT_LIGHT = "LIGHT";
+
+    // End timer effect constants
+    public static final String EFFECT_GLOW_PULSE = "GLOW_PULSE";
+    public static final String EFFECT_FLASH = "FLASH";
+    public static final String EFFECT_SUBTLE_BOUNCE = "SUBTLE_BOUNCE";
+    public static final String EFFECT_NONE = "NONE";
+
+    // End timer transition constants
+    public static final String TRANSITION_SMOOTH_FADE = "SMOOTH_FADE";
+    public static final String TRANSITION_SCALE_POP = "SCALE_POP";
+    public static final String TRANSITION_SLIDE_DOWN = "SLIDE_DOWN";
+    public static final String TRANSITION_INSTANT = "INSTANT";
+
+    // End timer text style constants
+    public static final String TEXT_STYLE_STANDARD = "STANDARD";
+    public static final String TEXT_STYLE_JEE_FOCUS = "JEE_FOCUS";
+    public static final String TEXT_STYLE_MINIMAL = "MINIMAL";
+    public static final String TEXT_STYLE_ENCOURAGING = "ENCOURAGING";
 
     public static final String SIZE_SMALL = "SMALL";
     public static final String SIZE_MEDIUM = "MEDIUM";
@@ -133,6 +177,11 @@ public class SettingsDialog extends Dialog {
     // Backup & Privacy views
     private CheckBox cbEnablePinLock;
     private EditText etPrivacyPin;
+
+    // Display & Layout views
+    private Spinner spinnerTimerFont, spinnerStudyTimerPosition;
+    private CheckBox cbShowStatusHints, cbCleanCountingMode;
+    private Spinner spinnerEndTimerTransition, spinnerEndTimerEffect, spinnerEndTimerTextStyle;
 
     private String currentSizeMode;
     private String currentTheme;
@@ -240,6 +289,65 @@ public class SettingsDialog extends Dialog {
         btnAccentBlue.setOnClickListener(v -> selectAccent(ThemeManager.ACCENT_BLUE));
         btnAccentOrange.setOnClickListener(v -> selectAccent(ThemeManager.ACCENT_ORANGE));
         btnAccentPurple.setOnClickListener(v -> selectAccent(ThemeManager.ACCENT_PURPLE));
+
+        // Timer Font Family & Study Timer Position
+        spinnerTimerFont = view.findViewById(R.id.spinnerTimerFont);
+        String[] fontLabels = {
+                "Digital Monospace (Default)",
+                "Modern Sans Bold",
+                "Condensed Sport",
+                "Classic Serif",
+                "Minimalist Light"
+        };
+        final String[] fontValues = {
+                FONT_MONOSPACE,
+                FONT_SANS_SERIF_BOLD,
+                FONT_CONDENSED,
+                FONT_SERIF,
+                FONT_LIGHT
+        };
+        ArrayAdapter<String> fontAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, fontLabels);
+        if (spinnerTimerFont != null) {
+            spinnerTimerFont.setAdapter(fontAdapter);
+            String savedFont = prefs.getString(KEY_TIMER_FONT, FONT_MONOSPACE);
+            for (int i = 0; i < fontValues.length; i++) {
+                if (fontValues[i].equals(savedFont)) {
+                    spinnerTimerFont.setSelection(i);
+                    break;
+                }
+            }
+        }
+
+        spinnerStudyTimerPosition = view.findViewById(R.id.spinnerStudyTimerPosition);
+        String[] posLabels = {
+                "Bottom-Left Corner (Recommended)",
+                "Bottom-Right Corner",
+                "Top-Left Corner",
+                "Top-Right Corner",
+                "Bottom Center",
+                "Center (Under Timer)",
+                "Hidden / Off"
+        };
+        final String[] posValues = {
+                POS_BOTTOM_LEFT,
+                POS_BOTTOM_RIGHT,
+                POS_TOP_LEFT,
+                POS_TOP_RIGHT,
+                POS_BOTTOM_CENTER,
+                POS_CENTER,
+                POS_HIDDEN
+        };
+        ArrayAdapter<String> posAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, posLabels);
+        if (spinnerStudyTimerPosition != null) {
+            spinnerStudyTimerPosition.setAdapter(posAdapter);
+            String savedPos = prefs.getString(KEY_STUDY_TIMER_POSITION, POS_BOTTOM_LEFT);
+            for (int i = 0; i < posValues.length; i++) {
+                if (posValues[i].equals(savedPos)) {
+                    spinnerStudyTimerPosition.setSelection(i);
+                    break;
+                }
+            }
+        }
 
         // Goals
         btnPillTime60 = view.findViewById(R.id.btnPillTime60);
@@ -353,6 +461,16 @@ public class SettingsDialog extends Dialog {
         cbAudioChime.setChecked(prefs.getBoolean(KEY_SOUND_ENABLED, false));
         cbAutoPip.setChecked(prefs.getBoolean(KEY_AUTO_PIP, true));
 
+        cbShowStatusHints = view.findViewById(R.id.cbShowStatusHints);
+        if (cbShowStatusHints != null) {
+            cbShowStatusHints.setChecked(prefs.getBoolean(KEY_SHOW_STATUS_HINTS, true));
+        }
+
+        cbCleanCountingMode = view.findViewById(R.id.cbCleanCountingMode);
+        if (cbCleanCountingMode != null) {
+            cbCleanCountingMode.setChecked(prefs.getBoolean(KEY_CLEAN_COUNTING_MODE, true));
+        }
+
         String[] idleOpts = {"Off (Disabled)", "5 Minutes Inactivity", "10 Minutes Inactivity", "15 Minutes Inactivity"};
         ArrayAdapter<String> idleAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, idleOpts);
         spinnerIdleDetection.setAdapter(idleAdapter);
@@ -364,6 +482,57 @@ public class SettingsDialog extends Dialog {
         spinnerBreakReminder.setAdapter(breakAdapter);
         int savedBreak = prefs.getInt(KEY_BREAK_MINUTES, 45);
         spinnerBreakReminder.setSelection(savedBreak == 25 ? 1 : (savedBreak == 45 ? 2 : (savedBreak == 60 ? 3 : 0)));
+
+        // End Timer Transitions & Effects
+        spinnerEndTimerTransition = view.findViewById(R.id.spinnerEndTimerTransition);
+        String[] transLabels = {"Smooth Fade (Default)", "Pop / Spring Bounce", "Slide Down", "Instant Cut"};
+        final String[] transValues = {TRANSITION_SMOOTH_FADE, TRANSITION_SCALE_POP, TRANSITION_SLIDE_DOWN, TRANSITION_INSTANT};
+        ArrayAdapter<String> transAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, transLabels);
+        if (spinnerEndTimerTransition != null) {
+            spinnerEndTimerTransition.setAdapter(transAdapter);
+            String savedTrans = prefs.getString(KEY_END_TIMER_TRANSITION, TRANSITION_SMOOTH_FADE);
+            for (int i = 0; i < transValues.length; i++) {
+                if (transValues[i].equals(savedTrans)) {
+                    spinnerEndTimerTransition.setSelection(i);
+                    break;
+                }
+            }
+        }
+
+        spinnerEndTimerEffect = view.findViewById(R.id.spinnerEndTimerEffect);
+        String[] effectLabels = {"AMOLED Glow Pulse (Default)", "Subtle Screen Flash", "Scale Bounce", "None (Minimal)"};
+        final String[] effectValues = {EFFECT_GLOW_PULSE, EFFECT_FLASH, EFFECT_SUBTLE_BOUNCE, EFFECT_NONE};
+        ArrayAdapter<String> effectAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, effectLabels);
+        if (spinnerEndTimerEffect != null) {
+            spinnerEndTimerEffect.setAdapter(effectAdapter);
+            String savedEff = prefs.getString(KEY_END_TIMER_EFFECT, EFFECT_GLOW_PULSE);
+            for (int i = 0; i < effectValues.length; i++) {
+                if (effectValues[i].equals(savedEff)) {
+                    spinnerEndTimerEffect.setSelection(i);
+                    break;
+                }
+            }
+        }
+
+        spinnerEndTimerTextStyle = view.findViewById(R.id.spinnerEndTimerTextStyle);
+        String[] textStyleLabels = {
+                "Standard (PAUSED • TAP FOR NEXT)",
+                "JEE Focus (QUESTION DONE • NEXT Q)",
+                "Minimal (PAUSED)",
+                "Encouraging (GREAT PACE • KEEP GOING)"
+        };
+        final String[] textStyleValues = {TEXT_STYLE_STANDARD, TEXT_STYLE_JEE_FOCUS, TEXT_STYLE_MINIMAL, TEXT_STYLE_ENCOURAGING};
+        ArrayAdapter<String> textStyleAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, textStyleLabels);
+        if (spinnerEndTimerTextStyle != null) {
+            spinnerEndTimerTextStyle.setAdapter(textStyleAdapter);
+            String savedTextStyle = prefs.getString(KEY_END_TIMER_TEXT_STYLE, TEXT_STYLE_STANDARD);
+            for (int i = 0; i < textStyleValues.length; i++) {
+                if (textStyleValues[i].equals(savedTextStyle)) {
+                    spinnerEndTimerTextStyle.setSelection(i);
+                    break;
+                }
+            }
+        }
 
         cbTwoZoneAnswer = view.findViewById(R.id.cbTwoZoneAnswer);
         layoutJeeExamType = view.findViewById(R.id.layoutJeeExamType);
@@ -656,6 +825,44 @@ public class SettingsDialog extends Dialog {
         }
         boolean autoWallpaper = (cbAutoApplyWallpaper != null && cbAutoApplyWallpaper.isChecked());
 
+        final String[] fontValues = {FONT_MONOSPACE, FONT_SANS_SERIF_BOLD, FONT_CONDENSED, FONT_SERIF, FONT_LIGHT};
+        String selectedFont = FONT_MONOSPACE;
+        if (spinnerTimerFont != null) {
+            int idx = spinnerTimerFont.getSelectedItemPosition();
+            if (idx >= 0 && idx < fontValues.length) selectedFont = fontValues[idx];
+        }
+
+        final String[] posValues = {POS_BOTTOM_LEFT, POS_BOTTOM_RIGHT, POS_TOP_LEFT, POS_TOP_RIGHT, POS_BOTTOM_CENTER, POS_CENTER, POS_HIDDEN};
+        String selectedPos = POS_BOTTOM_LEFT;
+        if (spinnerStudyTimerPosition != null) {
+            int idx = spinnerStudyTimerPosition.getSelectedItemPosition();
+            if (idx >= 0 && idx < posValues.length) selectedPos = posValues[idx];
+        }
+
+        final String[] transValues = {TRANSITION_SMOOTH_FADE, TRANSITION_SCALE_POP, TRANSITION_SLIDE_DOWN, TRANSITION_INSTANT};
+        String selectedTrans = TRANSITION_SMOOTH_FADE;
+        if (spinnerEndTimerTransition != null) {
+            int idx = spinnerEndTimerTransition.getSelectedItemPosition();
+            if (idx >= 0 && idx < transValues.length) selectedTrans = transValues[idx];
+        }
+
+        final String[] effectValues = {EFFECT_GLOW_PULSE, EFFECT_FLASH, EFFECT_SUBTLE_BOUNCE, EFFECT_NONE};
+        String selectedEffect = EFFECT_GLOW_PULSE;
+        if (spinnerEndTimerEffect != null) {
+            int idx = spinnerEndTimerEffect.getSelectedItemPosition();
+            if (idx >= 0 && idx < effectValues.length) selectedEffect = effectValues[idx];
+        }
+
+        final String[] textStyleValues = {TEXT_STYLE_STANDARD, TEXT_STYLE_JEE_FOCUS, TEXT_STYLE_MINIMAL, TEXT_STYLE_ENCOURAGING};
+        String selectedTextStyle = TEXT_STYLE_STANDARD;
+        if (spinnerEndTimerTextStyle != null) {
+            int idx = spinnerEndTimerTextStyle.getSelectedItemPosition();
+            if (idx >= 0 && idx < textStyleValues.length) selectedTextStyle = textStyleValues[idx];
+        }
+
+        boolean showHints = (cbShowStatusHints == null || cbShowStatusHints.isChecked());
+        boolean cleanCounting = (cbCleanCountingMode == null || cbCleanCountingMode.isChecked());
+
         prefs.edit()
                 .putString(KEY_TIMER_SIZE_MODE, currentSizeMode)
                 .putInt(KEY_TARGET_SEC_PER_Q, currentTargetSecPerQ)
@@ -675,6 +882,13 @@ public class SettingsDialog extends Dialog {
                 .putBoolean(KEY_WALLPAPER_AUTO_APPLY, autoWallpaper)
                 .putBoolean(KEY_PIN_ENABLED, cbEnablePinLock.isChecked())
                 .putString(KEY_PIN_CODE, etPrivacyPin.getText().toString().trim())
+                .putString(KEY_TIMER_FONT, selectedFont)
+                .putString(KEY_STUDY_TIMER_POSITION, selectedPos)
+                .putString(KEY_END_TIMER_TRANSITION, selectedTrans)
+                .putString(KEY_END_TIMER_EFFECT, selectedEffect)
+                .putString(KEY_END_TIMER_TEXT_STYLE, selectedTextStyle)
+                .putBoolean(KEY_SHOW_STATUS_HINTS, showHints)
+                .putBoolean(KEY_CLEAN_COUNTING_MODE, cleanCounting)
                 .apply();
 
         if (listener != null) {
@@ -682,6 +896,7 @@ public class SettingsDialog extends Dialog {
             listener.onThemeChanged(currentTheme, currentAccent);
             listener.onFocusControlsChanged();
             listener.onTwoZoneRecordingChanged(twoZone, selectedExamType);
+            listener.onDisplaySettingsChanged();
         }
         dismiss();
     }

@@ -454,6 +454,45 @@
                         android:textSize="11sp" />
                 </LinearLayout>
 
+                <!-- Timer Font Family -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.14"
+                    android:text="TIMER FONT FAMILY"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="11sp" />
+
+                <Spinner
+                    android:id="@+id/spinnerTimerFont"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
+
+                <!-- Total Study Timer Position -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.14"
+                    android:text="TOTAL STUDY TIMER POSITION"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="11sp" />
+
+                <Spinner
+                    android:id="@+id/spinnerStudyTimerPosition"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
+
             </LinearLayout>
 
             <!-- ============================================== -->
@@ -907,6 +946,26 @@
                     android:textColor="@color/text_primary"
                     android:textSize="12sp" />
 
+                <CheckBox
+                    android:id="@+id/cbShowStatusHints"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:checked="true"
+                    android:text="Show Tap &amp; Pause Hints (e.g. 'Tap anywhere for next')"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp" />
+
+                <CheckBox
+                    android:id="@+id/cbCleanCountingMode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:checked="true"
+                    android:text="Clean Timing Mode (Auto-hide headers during timing)"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp" />
+
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -1046,6 +1105,73 @@
 
                 <Spinner
                     android:id="@+id/spinnerBreakReminder"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="14dp"
+                    android:background="@color/amoled_divider" />
+
+                <!-- End Timer Transitions & Visual Effects -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.1"
+                    android:text="END TIMER TRANSITIONS &amp; EFFECTS"
+                    android:textColor="@color/accent_highlight"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:letterSpacing="0.1"
+                    android:text="TRANSITION ANIMATION"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <Spinner
+                    android:id="@+id/spinnerEndTimerTransition"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:letterSpacing="0.1"
+                    android:text="VISUAL END EFFECT"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <Spinner
+                    android:id="@+id/spinnerEndTimerEffect"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_pill"
+                    android:popupBackground="@drawable/bg_dialog_card" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:letterSpacing="0.1"
+                    android:text="END TIMER / PAUSE TEXT STYLE"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <Spinner
+                    android:id="@+id/spinnerEndTimerTextStyle"
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:layout_marginTop="6dp"

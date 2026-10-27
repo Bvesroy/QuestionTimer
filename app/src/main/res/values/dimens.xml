@@ -10,16 +10,16 @@
 
     <!-- Typography Sizes: Base & Settings Options -->
     <dimen name="text_timer_portrait">84sp</dimen>
-    <dimen name="text_timer_landscape">64sp</dimen>
+    <dimen name="text_timer_landscape">56sp</dimen>
 
     <dimen name="text_timer_small_portrait">64sp</dimen>
-    <dimen name="text_timer_small_landscape">48sp</dimen>
+    <dimen name="text_timer_small_landscape">42sp</dimen>
     <dimen name="text_timer_medium_portrait">84sp</dimen>
-    <dimen name="text_timer_medium_landscape">64sp</dimen>
+    <dimen name="text_timer_medium_landscape">56sp</dimen>
     <dimen name="text_timer_large_portrait">96sp</dimen>
-    <dimen name="text_timer_large_landscape">72sp</dimen>
+    <dimen name="text_timer_large_landscape">64sp</dimen>
     <dimen name="text_timer_xlarge_portrait">112sp</dimen>
-    <dimen name="text_timer_xlarge_landscape">84sp</dimen>
+    <dimen name="text_timer_xlarge_landscape">72sp</dimen>
 
     <dimen name="text_session_title">18sp</dimen>
     <dimen name="text_target">13sp</dimen>

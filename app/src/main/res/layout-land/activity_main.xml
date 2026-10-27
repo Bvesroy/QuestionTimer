@@ -15,10 +15,10 @@
         android:layout_alignParentTop="true"
         android:gravity="center"
         android:orientation="horizontal"
-        android:paddingStart="32dp"
-        android:paddingTop="12dp"
-        android:paddingEnd="32dp"
-        android:paddingBottom="6dp">
+        android:paddingStart="24dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="2dp">
 
         <LinearLayout
             android:id="@+id/layoutSessionTitle"
@@ -30,25 +30,25 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="8dp"
-            android:paddingTop="4dp"
+            android:paddingTop="2dp"
             android:paddingEnd="8dp"
-            android:paddingBottom="4dp">
+            android:paddingBottom="2dp">
 
             <TextView
                 android:id="@+id/tvSessionTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.16"
+                android:letterSpacing="0.14"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 tools:text="JEE ADVANCED PHYSICS" />
 
             <ImageView
                 android:id="@+id/ivEditTitle"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginStart="8dp"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginStart="6dp"
                 android:alpha="0.6"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_edit"
@@ -56,10 +56,10 @@
         </LinearLayout>
 
         <Space
-            android:layout_width="24dp"
+            android:layout_width="16dp"
             android:layout_height="wrap_content" />
 
-        <!-- Subtle Target Display (Clickable to edit target) -->
+        <!-- Question Counter Display (Clickable to edit target) -->
         <TextView
             android:id="@+id/tvTarget"
             android:layout_width="wrap_content"
@@ -69,15 +69,20 @@
             android:focusable="true"
             android:fontFamily="sans-serif-medium"
             android:letterSpacing="0.12"
+            android:paddingStart="10dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="2dp"
             android:textColor="@color/text_secondary"
-            android:textSize="12sp"
+            android:textSize="11sp"
             tools:text="QUESTION 1 / 50" />
 
+        <!-- Optional Exam Countdown Banner -->
         <TextView
             android:id="@+id/tvExamBanner"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="12dp"
             android:background="@drawable/bg_pill"
             android:fontFamily="sans-serif-medium"
             android:letterSpacing="0.12"
@@ -88,16 +93,18 @@
             android:textColor="@color/accent_paused"
             android:textSize="11sp"
             android:visibility="gone"
-            tools:text="JEE ADVANCED IN 142 DAYS"
+            tools:text="JEE ADVANCED IN 142 DAYS • FOCUS"
             tools:visibility="visible" />
 
     </LinearLayout>
 
-    <!-- Central Timer Readout & State Pill Container -->
+    <!-- Central Timer Readout Container (Strictly bounded between topBar and bottomControls to prevent any overlap) -->
     <LinearLayout
         android:id="@+id/centerContainer"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@id/topBarContainer"
+        android:layout_above="@id/bottomControlsContainer"
         android:layout_centerInParent="true"
         android:gravity="center"
         android:orientation="vertical">
@@ -117,44 +124,25 @@
             android:textStyle="bold"
             tools:text="00:00.0" />
 
-        <!-- Status Cue Badge (e.g. TAP ANYWHERE TO START) -->
+        <!-- Status Cue Badge (Optional, managed via Settings) -->
         <TextView
             android:id="@+id/tvStateBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="4dp"
             android:background="@drawable/bg_pill"
             android:fontFamily="sans-serif-medium"
-            android:letterSpacing="0.14"
+            android:letterSpacing="0.12"
             android:text="@string/badge_ready"
             android:textColor="@color/text_secondary"
             android:textSize="@dimen/text_badge" />
-
-        <!-- Total Study Clock & Break Indicator -->
-        <TextView
-            android:id="@+id/tvTotalStudyClock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:fontFamily="monospace"
-            android:letterSpacing="0.08"
-            android:paddingStart="10dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="10dp"
-            android:paddingBottom="2dp"
-            android:text="STUDY: 00:00:00 • BREAK: 00:00"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
 
         <!-- Live Outcome Performance Analytics KPI Display -->
         <TextView
             android:id="@+id/tvLiveAnalytics"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="3dp"
             android:fontFamily="monospace"
             android:gravity="center"
             android:letterSpacing="0.06"
@@ -166,6 +154,28 @@
 
     </LinearLayout>
 
+    <!-- Total Study Clock (Unobtrusively positioned in the corner, position customizable in Settings) -->
+    <TextView
+        android:id="@+id/tvTotalStudyClock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_pill"
+        android:clickable="true"
+        android:focusable="true"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.08"
+        android:paddingStart="10dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="3dp"
+        android:text="STUDY: 00:00:00 • BREAK: 00:00"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp" />
+
     <!-- Transient Undo Notification Banner -->
     <LinearLayout
         android:id="@+id/layoutUndoBanner"
@@ -173,14 +183,14 @@
         android:layout_height="wrap_content"
         android:layout_above="@id/bottomControlsContainer"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="6dp"
         android:background="@drawable/bg_dialog_card"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="14dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="10dp"
-        android:paddingBottom="6dp"
+        android:paddingStart="12dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp"
         android:visibility="gone">
 
         <TextView
@@ -196,12 +206,12 @@
         <Button
             android:id="@+id/btnUndoAnswer"
             android:layout_width="wrap_content"
-            android:layout_height="28dp"
-            android:layout_marginStart="10dp"
+            android:layout_height="26dp"
+            android:layout_marginStart="8dp"
             android:background="@drawable/bg_pill_accent"
             android:fontFamily="sans-serif-bold"
             android:letterSpacing="0.08"
-            android:paddingHorizontal="10dp"
+            android:paddingHorizontal="8dp"
             android:text="UNDO"
             android:textColor="@color/accent_running"
             android:textSize="10sp" />
@@ -210,20 +220,19 @@
     <!-- Subtle Bottom Control Bar (4 Auto-Hiding Buttons) -->
     <LinearLayout
         android:id="@+id/bottomControlsContainer"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
         android:gravity="center"
         android:orientation="horizontal"
-        android:paddingStart="32dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="32dp"
-        android:paddingBottom="16dp">
+        android:paddingTop="6dp"
+        android:paddingBottom="12dp">
 
         <ImageButton
             android:id="@+id/btnDiscard"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@drawable/bg_button_subtle"
             android:contentDescription="@string/desc_discard"
             android:src="@drawable/ic_discard"
@@ -235,8 +244,8 @@
 
         <ImageButton
             android:id="@+id/btnToggle"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@drawable/bg_button_subtle"
             android:contentDescription="@string/desc_toggle"
             android:src="@drawable/ic_play"
@@ -248,8 +257,8 @@
 
         <ImageButton
             android:id="@+id/btnHistory"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@drawable/bg_button_subtle"
             android:contentDescription="@string/desc_history"
             android:src="@drawable/ic_history"
@@ -261,8 +270,8 @@
 
         <ImageButton
             android:id="@+id/btnSettings"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@drawable/bg_button_subtle"
             android:contentDescription="@string/desc_settings"
             android:src="@drawable/ic_settings"

@@ -109,7 +109,8 @@ TEST_EXIT_CODE=0
   com.example.timerapp.data.TargetCountdownMathTest \
   com.example.timerapp.data.SchemaV4AndSafSettingsTest \
   com.example.timerapp.data.DatabaseV4MigrationAndAuditTest \
-  com.example.timerapp.data.OutcomeQuestionTimerAndAnalyticsTest || TEST_EXIT_CODE=$?
+  com.example.timerapp.data.OutcomeQuestionTimerAndAnalyticsTest \
+  com.example.timerapp.data.DisplayAndLandscapeSettingsTest || TEST_EXIT_CODE=$?
 
 SWARM_DIR="${SWARM_DIR:-${SWARM_ROOT:-$(cd "$DIR/../Swarm" 2>/dev/null && pwd -P || echo "${HOME:-}/Swarm")}}"
 ARCHIVE_DIR="$SWARM_DIR/metrics/tests"

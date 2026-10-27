@@ -352,4 +352,72 @@ public class TwoZoneHitDetectionAndUndoTest {
         Assert.assertEquals(TouchZone.ZONE_LOWER, landscapeDetector.detectZone(1200f, 850f)); // Lower central readout
         Assert.assertEquals(TouchZone.ZONE_LOWER, landscapeDetector.detectZone(200f, 1050f)); // Bottom left corner
     }
+
+    @Test
+    public void testChangeQuestionTag_WrongToRightAndRecalculateMarks() {
+        com.example.timerapp.model.TimerSession session = new com.example.timerapp.model.TimerSession(1L, "TEST", 10);
+        com.example.timerapp.model.QuestionLog q1 = new com.example.timerapp.model.QuestionLog(1L, 1L, 1, 60000L, System.currentTimeMillis(), "", "PHYSICS", "MEDIUM", "INCORRECT", 3, "", "");
+        session.addLog(q1);
+
+        // Initially marked wrong -> JEE Main score = -1
+        com.example.timerapp.data.analytics.EstimatedMarksCalculator.PerformanceAnalytics analyticsBefore =
+                com.example.timerapp.data.analytics.EstimatedMarksCalculator.computeAnalytics("JEE_MAIN", session.getLogs(), 10);
+        Assert.assertEquals(-1.0, analyticsBefore.estimatedScore, 0.001);
+        Assert.assertEquals(1, analyticsBefore.wrongCount);
+        Assert.assertEquals(0, analyticsBefore.correctCount);
+
+        // Change tag from WRONG to CORRECT
+        com.example.timerapp.model.QuestionLog updatedLog = session.updateLastLogOutcome("CORRECT");
+        Assert.assertNotNull(updatedLog);
+
+        // Recalculate -> JEE Main score = +4
+        com.example.timerapp.data.analytics.EstimatedMarksCalculator.PerformanceAnalytics analyticsAfter =
+                com.example.timerapp.data.analytics.EstimatedMarksCalculator.computeAnalytics("JEE_MAIN", session.getLogs(), 10);
+        Assert.assertEquals(4.0, analyticsAfter.estimatedScore, 0.001);
+        Assert.assertEquals(0, analyticsAfter.wrongCount);
+        Assert.assertEquals(1, analyticsAfter.correctCount);
+    }
+
+    @Test
+    public void testSessionRemoveLogById_deletesOnlyTargetedQuestion() {
+        com.example.timerapp.model.TimerSession session = new com.example.timerapp.model.TimerSession(1L, "TEST", 10);
+        com.example.timerapp.model.QuestionLog q1 = new com.example.timerapp.model.QuestionLog(101L, 1L, 1, 50000L, 1000L, "", "PHYSICS", "EASY", "CORRECT", 3, "", "");
+        com.example.timerapp.model.QuestionLog q2 = new com.example.timerapp.model.QuestionLog(102L, 1L, 2, 75000L, 2000L, "", "PHYSICS", "HARD", "INCORRECT", 2, "CALC_ERROR", "");
+        com.example.timerapp.model.QuestionLog q3 = new com.example.timerapp.model.QuestionLog(103L, 1L, 3, 40000L, 3000L, "", "PHYSICS", "EASY", "CORRECT", 3, "", "");
+
+        session.addLog(q1);
+        session.addLog(q2);
+        session.addLog(q3);
+        Assert.assertEquals(3, session.getLogs().size());
+        Assert.assertEquals(4, session.getCurrentQuestion());
+
+        // Delete Question 2 by ID (the incorrect one)
+        boolean removed = session.removeLogById(102L);
+        Assert.assertTrue("Log 102 should be removed", removed);
+        Assert.assertEquals(2, session.getLogs().size());
+        Assert.assertEquals(3, session.getCurrentQuestion());
+
+        // Verify remaining logs are q1 and q3
+        Assert.assertEquals(101L, session.getLogs().get(0).getId());
+        Assert.assertEquals(103L, session.getLogs().get(1).getId());
+
+        // Attempt removing non-existent ID
+        Assert.assertFalse(session.removeLogById(999L));
+    }
+
+    @Test
+    public void testSessionRemoveLogsByIds_multiSelectionDeletion() {
+        com.example.timerapp.model.TimerSession session = new com.example.timerapp.model.TimerSession(1L, "TEST", 10);
+        session.addLog(new com.example.timerapp.model.QuestionLog(201L, 1L, 1, 30000L, 1000L, "", "MATH", "EASY", "CORRECT", 3, "", ""));
+        session.addLog(new com.example.timerapp.model.QuestionLog(202L, 1L, 2, 45000L, 2000L, "", "MATH", "MEDIUM", "INCORRECT", 1, "", ""));
+        session.addLog(new com.example.timerapp.model.QuestionLog(203L, 1L, 3, 60000L, 3000L, "", "MATH", "HARD", "INCORRECT", 2, "", ""));
+        session.addLog(new com.example.timerapp.model.QuestionLog(204L, 1L, 4, 35000L, 4000L, "", "MATH", "EASY", "CORRECT", 3, "", ""));
+
+        java.util.Set<Long> toDelete = new java.util.HashSet<>(java.util.Arrays.asList(202L, 203L));
+        int count = session.removeLogsByIds(toDelete);
+        Assert.assertEquals(2, count);
+        Assert.assertEquals(2, session.getLogs().size());
+        Assert.assertEquals(201L, session.getLogs().get(0).getId());
+        Assert.assertEquals(204L, session.getLogs().get(1).getId());
+    }
 }

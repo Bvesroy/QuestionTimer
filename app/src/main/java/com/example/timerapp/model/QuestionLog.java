@@ -111,6 +111,14 @@ public class QuestionLog {
         return correctionTimestamp;
     }
 
+    public QuestionLog withOutcome(String newOutcome) {
+        String orig = (this.originalOutcome != null && !this.originalOutcome.isEmpty())
+                ? this.originalOutcome : this.outcome;
+        return new QuestionLog(this.id, this.sessionId, this.questionNumber, this.durationMs, this.timestamp,
+                this.label, this.topic, this.difficulty, newOutcome, this.confidence, this.mistakeTag, this.notes,
+                orig, System.currentTimeMillis());
+    }
+
     public QuestionLog withTags(String outcome, String difficulty, int confidence, String mistakeTag, String notes) {
         return new QuestionLog(this.id, this.sessionId, this.questionNumber, this.durationMs, this.timestamp,
                 this.label, this.topic, difficulty, outcome, confidence, mistakeTag, notes,

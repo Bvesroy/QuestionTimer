@@ -102,9 +102,10 @@ public class MainActivity extends Activity {
     private ImageButton btnHistory;
     private ImageButton btnSettings;
 
-    // Two-Zone Answer Recording & Undo Views
+    // Two-Zone Answer Recording, Corner Change Tag & Undo Views
     private View layoutUndoBanner;
     private TextView tvUndoMessage;
+    private Button btnChangeTag;
     private Button btnUndoAnswer;
     private TextView tvLiveAnalytics;
     private boolean isTwoZoneRecordingEnabled = true;
@@ -349,10 +350,14 @@ public class MainActivity extends Activity {
             viewLowerFeedback.setVisibility(View.GONE);
         }
 
-        // Transient Undo Notification Banner
+        // Corner Undo & Change Tag Notification Banner
         layoutUndoBanner = findViewById(R.id.layoutUndoBanner);
         tvUndoMessage = findViewById(R.id.tvUndoMessage);
+        btnChangeTag = findViewById(R.id.btnChangeTag);
         btnUndoAnswer = findViewById(R.id.btnUndoAnswer);
+        if (btnChangeTag != null) {
+            btnChangeTag.setOnClickListener(v -> changeLastAnswerTag());
+        }
         if (btnUndoAnswer != null) {
             btnUndoAnswer.setOnClickListener(v -> undoLastAnswerOutcome());
         }
@@ -985,19 +990,55 @@ public class MainActivity extends Activity {
         String outcomeStr = isIncorrect ? "WRONG" : "RIGHT";
         tvUndoMessage.setText(String.format(Locale.ROOT, "Q#%d %s (%s, %s)",
                 log.getQuestionNumber(), outcomeStr, markStr, log.getFormattedDuration()));
+
+        if (btnChangeTag != null) {
+            if (isIncorrect) {
+                btnChangeTag.setText("CHANGE TO RIGHT");
+                btnChangeTag.setTextColor(getColor(R.color.accent_running));
+                btnChangeTag.setBackgroundResource(R.drawable.bg_pill_accent);
+            } else {
+                btnChangeTag.setText("CHANGE TO WRONG");
+                btnChangeTag.setTextColor(getColor(R.color.accent_paused));
+                btnChangeTag.setBackgroundResource(R.drawable.bg_pill_orange);
+            }
+            btnChangeTag.setVisibility(View.VISIBLE);
+        }
+
         layoutUndoBanner.setVisibility(View.VISIBLE);
         layoutUndoBanner.setAlpha(1.0f);
+        // Stays visible in the corner while paused so user can change tags or undo without rushing
+    }
 
-        // Transient auto-dismiss in 4.5 seconds
-        undoBannerHandler.postDelayed(() -> {
-            if (layoutUndoBanner != null) {
-                layoutUndoBanner.animate()
-                        .alpha(0.0f)
-                        .setDuration(250)
-                        .withEndAction(() -> layoutUndoBanner.setVisibility(View.GONE))
-                        .start();
-            }
-        }, 4500);
+    private void changeLastAnswerTag() {
+        triggerTapFeedback();
+        if (currentSession == null || currentSession.getLogs().isEmpty()) return;
+
+        QuestionLog lastLog = currentSession.getLastLog();
+        if (lastLog == null) return;
+
+        boolean wasWrong = OutcomeClassifier.isWrong(lastLog.getOutcome());
+        String newOutcome = wasWrong ? "CORRECT" : "INCORRECT";
+        QuestionLog updatedLog = currentSession.updateLastLogOutcome(newOutcome);
+        if (updatedLog == null) return;
+
+        if (updatedLog.getId() > 0) {
+            com.example.timerapp.data.local.sqlite.TimerDatabaseManager.getInstance(this).updateQuestionOutcome(updatedLog.getId(), newOutcome);
+        }
+        persistSessions();
+
+        triggerTwoZoneHaptic(newOutcome);
+        if (wasWrong) {
+            triggerZoneClickEffect(false);
+            Toast.makeText(this, "Question #" + updatedLog.getQuestionNumber() + " changed to RIGHT (+4 PTS)", Toast.LENGTH_SHORT).show();
+        } else {
+            triggerZoneClickEffect(true);
+            double penalty = "JEE_ADVANCED".equalsIgnoreCase(currentJeeExamType) ? 2.0 : 1.0;
+            Toast.makeText(this, "Question #" + updatedLog.getQuestionNumber() + " changed to WRONG (-" + (int) penalty + " PTS)", Toast.LENGTH_SHORT).show();
+        }
+
+        showUndoAnswerBanner(updatedLog);
+        renderUi();
+        updateWidgets();
     }
 
     private void undoLastAnswerOutcome() {
@@ -1047,6 +1088,9 @@ public class MainActivity extends Activity {
     private void startTimer() {
         manualPauseActive = false;
         lastRecordedOutcomeLog = null;
+        if (layoutUndoBanner != null) {
+            layoutUndoBanner.setVisibility(View.GONE);
+        }
         if (viewUpperFeedback != null) {
             viewUpperFeedback.animate().cancel();
             viewUpperFeedback.setVisibility(View.GONE);
@@ -1138,6 +1182,9 @@ public class MainActivity extends Activity {
      * resetting the clock and moving to a fresh question.
      */
     private void resumeCurrentQuestion() {
+        if (layoutUndoBanner != null) {
+            layoutUndoBanner.setVisibility(View.GONE);
+        }
         if (viewUpperFeedback != null) {
             viewUpperFeedback.animate().cancel();
             viewUpperFeedback.setVisibility(View.GONE);
@@ -1165,6 +1212,9 @@ public class MainActivity extends Activity {
     private void advanceAndStartNextQuestion() {
         manualPauseActive = false;
         lastRecordedOutcomeLog = null;
+        if (layoutUndoBanner != null) {
+            layoutUndoBanner.setVisibility(View.GONE);
+        }
         if (viewUpperFeedback != null) {
             viewUpperFeedback.animate().cancel();
             viewUpperFeedback.setVisibility(View.GONE);
@@ -1663,6 +1713,8 @@ public class MainActivity extends Activity {
             @Override
             public void onSessionNotesEdited(TimerSession session) {
                 persistSessions();
+                renderUi();
+                updateWidgets();
             }
         });
         sheet.show();

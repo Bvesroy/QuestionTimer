@@ -341,21 +341,23 @@
                         android:textSize="11sp" />
                 </LinearLayout>
 
-                <!-- Question Timing Breakdown List -->
+                <!-- Question Timing Breakdown Header (Default) -->
                 <RelativeLayout
+                    android:id="@+id/layoutQuestionHeaderNormal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
                     android:layout_marginBottom="8dp">
 
                     <TextView
+                        android:id="@+id/tvHeaderQuestionBreakdown"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentStart="true"
                         android:layout_centerVertical="true"
                         android:fontFamily="sans-serif-medium"
                         android:letterSpacing="0.14"
-                        android:text="QUESTION BREAKDOWN"
+                        android:text="QUESTION BREAKDOWN (LONG PRESS TO SELECT)"
                         android:textColor="@color/text_tertiary"
                         android:textSize="11sp" />
 
@@ -371,6 +373,65 @@
                         android:text="@string/btn_clear_history"
                         android:textColor="@color/accent_discard"
                         android:textSize="10sp" />
+                </RelativeLayout>
+
+                <!-- Question Selection Toolbar (Active on Long-Press) -->
+                <RelativeLayout
+                    android:id="@+id/layoutQuestionSelectionBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_dialog_card"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvSelectionCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:fontFamily="sans-serif-bold"
+                        android:letterSpacing="0.08"
+                        android:text="1 SELECTED"
+                        android:textColor="@color/accent_highlight"
+                        android:textSize="11sp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnDeleteSelectedQuestions"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:background="@drawable/bg_pill_orange"
+                            android:fontFamily="sans-serif-bold"
+                            android:letterSpacing="0.08"
+                            android:paddingHorizontal="10dp"
+                            android:text="DELETE SELECTED"
+                            android:textColor="@color/accent_discard"
+                            android:textSize="10sp" />
+
+                        <Button
+                            android:id="@+id/btnCancelSelection"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_button_text"
+                            android:fontFamily="sans-serif-medium"
+                            android:letterSpacing="0.08"
+                            android:paddingHorizontal="8dp"
+                            android:text="CANCEL"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp" />
+                    </LinearLayout>
                 </RelativeLayout>
 
                 <TextView

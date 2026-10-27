@@ -2482,6 +2482,34 @@ public class TimerDatabaseManager {
         return sessions;
     }
 
+    public synchronized boolean deleteQuestionLog(long logId) {
+        if (logId <= 0) return false;
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        return db.delete(DatabaseContract.QuestionLogEntry.TABLE_NAME,
+                DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID + " = ?",
+                new String[]{String.valueOf(logId)}) > 0;
+    }
+
+    public synchronized int deleteQuestionLogs(java.util.Collection<Long> logIds) {
+        if (logIds == null || logIds.isEmpty()) return 0;
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.beginTransaction();
+        int deleted = 0;
+        try {
+            for (Long id : logIds) {
+                if (id != null && id > 0) {
+                    deleted += db.delete(DatabaseContract.QuestionLogEntry.TABLE_NAME,
+                            DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID + " = ?",
+                            new String[]{String.valueOf(id)});
+                }
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        return deleted;
+    }
+
     public synchronized boolean deleteLastQuestionLogForSession(long sessionId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         Cursor cursor = db.rawQuery("SELECT " + DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID +
@@ -2500,6 +2528,16 @@ public class TimerDatabaseManager {
             cursor.close();
         }
         return false;
+    }
+
+    public synchronized boolean updateQuestionOutcome(long logId, String outcome) {
+        if (logId <= 0 || outcome == null) return false;
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put(DatabaseContract.QuestionLogEntry.COLUMN_OUTCOME, outcome);
+        int rows = db.update(DatabaseContract.QuestionLogEntry.TABLE_NAME, cv,
+                DatabaseContract.QuestionLogEntry.COLUMN_ALT_ID + " = ?", new String[]{String.valueOf(logId)});
+        return rows > 0;
     }
 
     public synchronized boolean updateQuestionLogDetails(long logId, String outcome, String difficulty,

@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -13,12 +14,15 @@ import com.example.timerapp.model.QuestionLog;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * High-performance AMOLED ListView adapter for question solve time breakdown.
  * Displays question number, relative duration bar, fastest/slowest badges, and monospaced duration.
+ * Supports multi-item / single-item selection mode activated via long press for deletion.
  */
 public class QuestionLogAdapter extends BaseAdapter {
 
@@ -26,9 +30,18 @@ public class QuestionLogAdapter extends BaseAdapter {
         void onTagClicked(QuestionLog log);
     }
 
+    public interface OnQuestionLogInteractionListener {
+        void onTagClicked(QuestionLog log);
+        void onItemLongClicked(QuestionLog log, int position);
+        void onItemClicked(QuestionLog log, int position);
+    }
+
     private final List<QuestionLog> logs = new ArrayList<>();
+    private final Set<Long> selectedLogIds = new HashSet<>();
+    private boolean isSelectionMode = false;
     private final LayoutInflater inflater;
     private OnQuestionTagClickListener tagClickListener;
+    private OnQuestionLogInteractionListener interactionListener;
     private long maxDurationMs = 1;
     private long fastestLogId = -1;
     private long slowestLogId = -1;
@@ -39,6 +52,49 @@ public class QuestionLogAdapter extends BaseAdapter {
 
     public void setOnQuestionTagClickListener(OnQuestionTagClickListener listener) {
         this.tagClickListener = listener;
+    }
+
+    public void setOnQuestionLogInteractionListener(OnQuestionLogInteractionListener listener) {
+        this.interactionListener = listener;
+    }
+
+    public void setSelectionMode(boolean enabled) {
+        this.isSelectionMode = enabled;
+        if (!enabled) {
+            selectedLogIds.clear();
+        }
+        notifyDataSetChanged();
+    }
+
+    public boolean isSelectionMode() {
+        return isSelectionMode;
+    }
+
+    public void toggleSelection(long logId) {
+        if (selectedLogIds.contains(logId)) {
+            selectedLogIds.remove(logId);
+        } else {
+            selectedLogIds.add(logId);
+        }
+        notifyDataSetChanged();
+    }
+
+    public void selectItem(long logId) {
+        selectedLogIds.add(logId);
+        notifyDataSetChanged();
+    }
+
+    public void clearSelection() {
+        selectedLogIds.clear();
+        notifyDataSetChanged();
+    }
+
+    public Set<Long> getSelectedLogIds() {
+        return new HashSet<>(selectedLogIds);
+    }
+
+    public int getSelectedCount() {
+        return selectedLogIds.size();
     }
 
     public void setLogs(List<QuestionLog> newLogs, QuestionLog fastest, QuestionLog slowest) {
@@ -81,6 +137,8 @@ public class QuestionLogAdapter extends BaseAdapter {
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.item_question_log, parent, false);
             holder = new ViewHolder();
+            holder.layoutRoot = convertView.findViewById(R.id.layoutQuestionLogRow);
+            holder.ivSelectCheck = convertView.findViewById(R.id.ivSelectCheck);
             holder.tvQuestionNum = convertView.findViewById(R.id.tvQuestionNum);
             holder.pbDurationBar = convertView.findViewById(R.id.pbDurationBar);
             holder.tvDurationTag = convertView.findViewById(R.id.tvDurationTag);
@@ -93,6 +151,21 @@ public class QuestionLogAdapter extends BaseAdapter {
 
         QuestionLog log = getItem(position);
         Context ctx = convertView.getContext();
+        boolean isSelected = selectedLogIds.contains(log.getId());
+
+        // Handle selection state UI
+        if (isSelectionMode) {
+            if (holder.ivSelectCheck != null) {
+                holder.ivSelectCheck.setVisibility(View.VISIBLE);
+                holder.ivSelectCheck.setImageResource(isSelected ? R.drawable.ic_checkbox_selected : R.drawable.ic_checkbox_unselected);
+            }
+            convertView.setBackgroundColor(isSelected ? 0x334A90E2 : 0x00000000);
+        } else {
+            if (holder.ivSelectCheck != null) {
+                holder.ivSelectCheck.setVisibility(View.GONE);
+            }
+            convertView.setBackgroundColor(0x00000000);
+        }
 
         holder.tvQuestionNum.setText(String.format(Locale.ROOT, "Q %02d", log.getQuestionNumber()));
         holder.tvDuration.setText(log.getFormattedDuration());
@@ -117,11 +190,41 @@ public class QuestionLogAdapter extends BaseAdapter {
             }
 
             holder.btnTagQuestion.setOnClickListener(v -> {
-                if (tagClickListener != null) {
-                    tagClickListener.onTagClicked(log);
+                if (isSelectionMode) {
+                    toggleSelection(log.getId());
+                    if (interactionListener != null) {
+                        interactionListener.onItemClicked(log, position);
+                    }
+                } else {
+                    if (interactionListener != null) {
+                        interactionListener.onTagClicked(log);
+                    } else if (tagClickListener != null) {
+                        tagClickListener.onTagClicked(log);
+                    }
                 }
             });
         }
+
+        // Long click to trigger selection mode & select item
+        convertView.setOnLongClickListener(v -> {
+            if (interactionListener != null) {
+                interactionListener.onItemLongClicked(log, position);
+                return true;
+            }
+            return false;
+        });
+
+        // Click to toggle selection in selection mode
+        convertView.setOnClickListener(v -> {
+            if (isSelectionMode) {
+                toggleSelection(log.getId());
+                if (interactionListener != null) {
+                    interactionListener.onItemClicked(log, position);
+                }
+            } else if (interactionListener != null) {
+                interactionListener.onItemClicked(log, position);
+            }
+        });
 
         int progressPercent = (int) Math.min(100, Math.max(5, (log.getDurationMs() * 100) / maxDurationMs));
         holder.pbDurationBar.setProgress(progressPercent);
@@ -142,6 +245,8 @@ public class QuestionLogAdapter extends BaseAdapter {
     }
 
     private static class ViewHolder {
+        View layoutRoot;
+        ImageView ivSelectCheck;
         TextView tvQuestionNum;
         ProgressBar pbDurationBar;
         TextView tvDurationTag;

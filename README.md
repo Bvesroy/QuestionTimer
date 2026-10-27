@@ -4,7 +4,7 @@
 > *Because staring at a textbook for 4 hours while daydreaming about IIT Bombay doesn't count as study time.* 📉
 
 [![Android](https://img.shields.io/badge/Platform-Android_8.0+_(API_26--35)-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
-[![Build & Tests](https://img.shields.io/badge/Tests-159_Passed_(100%25)-brightgreen?logo=checkmarx)](run_tests.sh)
+[![Build & Tests](https://img.shields.io/badge/Tests-163_Passed_(100%25)-brightgreen?logo=checkmarx)](run_tests.sh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Zero Bloat](https://img.shields.io/badge/Dependencies-0_Bloat_Libraries-blueviolet)](app/build.gradle)
 [![Theme](https://img.shields.io/badge/UI-Pure_AMOLED_Black-000000)](app/src/main/res/values/colors.xml)
@@ -78,8 +78,21 @@ Forget fiddling with microscopic pause buttons while your brain is frying over o
   The timer stops, flashes **Emerald Green**, and tags it as **CORRECT**.
 - **Ready for the next question?**  
   When paused, tap **ANYWHERE** on the screen. The clock resets and starts ticking for Question #N+1 immediately.
-- **Accidental misclick panic?**  
-  If your finger genuinely slipped, a quick **"Tap to Undo"** floating banner appears for 4 seconds at the bottom. Tap it to revert the tag before your misclick is etched into your permanent study statistics.
+- **Accidental misclick or change of heart? (Persistent Corner Undo & Change Tag)**  
+  Right there in the corner, a persistent control card **remains visible** for the entire pause duration.  
+  - Tap **`CHANGE TO RIGHT`** to instantly flip the question tag to Correct (+4 marks instead of -1) without resetting your time.
+  - Tap **`UNDO`** to restore the question clock and discard the attempt.  
+  Take all the time you need—it won't disappear until you start the next question.
+
+---
+
+### 2. History Question Breakdown: Long-Press Select & Delete 🗑️
+Need to clean up a test attempt or a question logged by mistake?
+1. Open the **History 📜** bottom sheet.
+2. In the **Question Breakdown** list, **long-press (click long enough)** on any question (Q1, Q2, Q3...).
+3. Tactile haptic feedback activates **Selection Mode**, displaying a check circle on each question and revealing the **Selection Toolbar**.
+4. Tap additional questions to toggle their selection, or keep just that single question selected.
+5. Tap **`DELETE SELECTED`** to purge only the selected question(s) from SQLite. Session stats, averages, and estimated marks recalculate instantly!
 
 ---
 

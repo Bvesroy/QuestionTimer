@@ -21,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.timerapp.R;
 import com.example.timerapp.data.analytics.StudyCoachEngine;
@@ -384,23 +385,127 @@ public class HistoryBottomSheet extends Dialog {
             lvLogs.setVisibility(View.VISIBLE);
             if (btnClearLogs != null) btnClearLogs.setVisibility(View.VISIBLE);
 
+            View layoutQuestionHeaderNormal = findViewById(R.id.layoutQuestionHeaderNormal);
+            View layoutQuestionSelectionBar = findViewById(R.id.layoutQuestionSelectionBar);
+            TextView tvSelectionCount = findViewById(R.id.tvSelectionCount);
+            Button btnDeleteSelectedQuestions = findViewById(R.id.btnDeleteSelectedQuestions);
+            Button btnCancelSelection = findViewById(R.id.btnCancelSelection);
+
             QuestionLogAdapter adapter = new QuestionLogAdapter(getContext());
             adapter.setLogs(activeSession.getLogs(), fastest, activeSession.getSlowestLog());
-            adapter.setOnQuestionTagClickListener(log -> {
-                QuestionTaggingDialog dialog = new QuestionTaggingDialog(getContext(), log, updatedLog -> {
-                    for (int i = 0; i < activeSession.getLogs().size(); i++) {
-                        if (activeSession.getLogs().get(i).getId() == updatedLog.getId()) {
-                            activeSession.getLogs().set(i, updatedLog);
-                            break;
+
+            Runnable updateSelectionUi = () -> {
+                int count = adapter.getSelectedCount();
+                if (count > 0) {
+                    if (layoutQuestionHeaderNormal != null) layoutQuestionHeaderNormal.setVisibility(View.GONE);
+                    if (layoutQuestionSelectionBar != null) layoutQuestionSelectionBar.setVisibility(View.VISIBLE);
+                    if (tvSelectionCount != null) {
+                        tvSelectionCount.setText(count + " SELECTED");
+                    }
+                } else {
+                    if (layoutQuestionHeaderNormal != null) layoutQuestionHeaderNormal.setVisibility(View.VISIBLE);
+                    if (layoutQuestionSelectionBar != null) layoutQuestionSelectionBar.setVisibility(View.GONE);
+                    adapter.setSelectionMode(false);
+                }
+            };
+
+            adapter.setOnQuestionLogInteractionListener(new QuestionLogAdapter.OnQuestionLogInteractionListener() {
+                @Override
+                public void onTagClicked(QuestionLog log) {
+                    QuestionTaggingDialog dialog = new QuestionTaggingDialog(getContext(), log, updatedLog -> {
+                        for (int i = 0; i < activeSession.getLogs().size(); i++) {
+                            if (activeSession.getLogs().get(i).getId() == updatedLog.getId()) {
+                                activeSession.getLogs().set(i, updatedLog);
+                                break;
+                            }
                         }
+                        if (listener != null) {
+                            listener.onSessionNotesEdited(activeSession);
+                        }
+                        adapter.setLogs(activeSession.getLogs(), activeSession.getFastestLog(), activeSession.getSlowestLog());
+                    });
+                    dialog.show();
+                }
+
+                @Override
+                public void onItemLongClicked(QuestionLog log, int position) {
+                    try {
+                        android.os.Vibrator v = (android.os.Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+                        if (v != null) {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                v.vibrate(android.os.VibrationEffect.createOneShot(40, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+                            } else {
+                                v.vibrate(40);
+                            }
+                        }
+                    } catch (Exception ignored) {}
+
+                    if (!adapter.isSelectionMode()) {
+                        adapter.setSelectionMode(true);
                     }
-                    if (listener != null) {
-                        listener.onSessionNotesEdited(activeSession);
+                    adapter.toggleSelection(log.getId());
+                    updateSelectionUi.run();
+                }
+
+                @Override
+                public void onItemClicked(QuestionLog log, int position) {
+                    if (adapter.isSelectionMode()) {
+                        updateSelectionUi.run();
+                    } else {
+                        onTagClicked(log);
                     }
-                    adapter.setLogs(activeSession.getLogs(), activeSession.getFastestLog(), activeSession.getSlowestLog());
-                });
-                dialog.show();
+                }
             });
+
+            if (btnCancelSelection != null) {
+                btnCancelSelection.setOnClickListener(v -> {
+                    adapter.setSelectionMode(false);
+                    updateSelectionUi.run();
+                });
+            }
+
+            if (btnDeleteSelectedQuestions != null) {
+                btnDeleteSelectedQuestions.setOnClickListener(v -> {
+                    java.util.Set<Long> selectedIds = adapter.getSelectedLogIds();
+                    if (selectedIds.isEmpty()) return;
+
+                    int count = selectedIds.size();
+                    String message = (count == 1)
+                            ? "Delete selected question? This will remove the attempt and recalculate your session score and time."
+                            : "Delete " + count + " selected questions? This will remove the attempts and recalculate your session score and time.";
+
+                    new android.app.AlertDialog.Builder(getContext(), R.style.Theme_FullScreenTimer_Dialog)
+                            .setTitle("Delete Question" + (count > 1 ? "s" : ""))
+                            .setMessage(message)
+                            .setPositiveButton("Delete", (d, which) -> {
+                                activeSession.removeLogsByIds(selectedIds);
+                                com.example.timerapp.data.local.sqlite.TimerDatabaseManager db =
+                                        com.example.timerapp.data.local.sqlite.TimerDatabaseManager.getInstance(getContext());
+                                db.deleteQuestionLogs(selectedIds);
+
+                                if (listener != null) {
+                                    listener.onSessionNotesEdited(activeSession);
+                                }
+
+                                adapter.setSelectionMode(false);
+                                updateSelectionUi.run();
+
+                                if (activeSession.getLogs().isEmpty()) {
+                                    tvEmptyLogs.setVisibility(View.VISIBLE);
+                                    lvLogs.setVisibility(View.GONE);
+                                    if (btnClearLogs != null) btnClearLogs.setVisibility(View.GONE);
+                                } else {
+                                    adapter.setLogs(activeSession.getLogs(), activeSession.getFastestLog(), activeSession.getSlowestLog());
+                                }
+
+                                populateCurrentSessionTab();
+                                Toast.makeText(getContext(), (count == 1 ? "Question" : count + " questions") + " deleted", Toast.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                });
+            }
+
             lvLogs.setAdapter(adapter);
         }
 

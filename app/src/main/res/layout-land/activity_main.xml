@@ -207,13 +207,15 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- Transient Undo Notification Banner -->
+    <!-- Corner Undo & Change Tag Notification Banner (Remains visible while paused) -->
     <LinearLayout
         android:id="@+id/layoutUndoBanner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@id/bottomControlsContainer"
-        android:layout_centerHorizontal="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
         android:layout_marginBottom="6dp"
         android:background="@drawable/bg_dialog_card"
         android:elevation="16dp"
@@ -236,16 +238,29 @@
             android:textSize="11sp" />
 
         <Button
-            android:id="@+id/btnUndoAnswer"
+            android:id="@+id/btnChangeTag"
             android:layout_width="wrap_content"
-            android:layout_height="26dp"
+            android:layout_height="28dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_pill_accent"
             android:fontFamily="sans-serif-bold"
             android:letterSpacing="0.08"
             android:paddingHorizontal="8dp"
-            android:text="UNDO"
+            android:text="CHANGE TO RIGHT"
             android:textColor="@color/accent_running"
+            android:textSize="10sp" />
+
+        <Button
+            android:id="@+id/btnUndoAnswer"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_button_tonal"
+            android:fontFamily="sans-serif-bold"
+            android:letterSpacing="0.08"
+            android:paddingHorizontal="8dp"
+            android:text="UNDO"
+            android:textColor="@color/text_secondary"
             android:textSize="10sp" />
     </LinearLayout>
 

@@ -178,6 +178,47 @@ public class TimerSession {
         return null;
     }
 
+    public boolean removeLogById(long logId) {
+        for (int i = 0; i < logs.size(); i++) {
+            if (logs.get(i).getId() == logId) {
+                logs.remove(i);
+                this.currentQuestion = Math.max(1, logs.size() + 1);
+                this.updatedAt = System.currentTimeMillis();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int removeLogsByIds(java.util.Collection<Long> logIds) {
+        if (logIds == null || logIds.isEmpty()) return 0;
+        int removed = 0;
+        java.util.Iterator<QuestionLog> it = logs.iterator();
+        while (it.hasNext()) {
+            QuestionLog log = it.next();
+            if (logIds.contains(log.getId())) {
+                it.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            this.currentQuestion = Math.max(1, logs.size() + 1);
+            this.updatedAt = System.currentTimeMillis();
+        }
+        return removed;
+    }
+
+    public QuestionLog updateLastLogOutcome(String newOutcome) {
+        if (!logs.isEmpty()) {
+            int lastIndex = logs.size() - 1;
+            QuestionLog updated = logs.get(lastIndex).withOutcome(newOutcome);
+            logs.set(lastIndex, updated);
+            this.updatedAt = System.currentTimeMillis();
+            return updated;
+        }
+        return null;
+    }
+
     public QuestionLog getLastLog() {
         if (!logs.isEmpty()) {
             return logs.get(logs.size() - 1);

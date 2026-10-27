@@ -163,8 +163,19 @@ public class SessionStorage {
                 if (currentLogs.isEmpty()) {
                     dbManager.clearQuestionLogsForSession(s.getId());
                 } else {
-                    int toDelete = existingCount - currentLogs.size();
-                    for (int i = 0; i < toDelete; i++) {
+                    java.util.Set<Long> currentIds = new java.util.HashSet<>();
+                    for (QuestionLog q : currentLogs) {
+                        if (q.getId() > 0) currentIds.add(q.getId());
+                    }
+                    int deletedById = 0;
+                    for (QuestionLog existingLog : uiLogs) {
+                        if (existingLog.getId() > 0 && !currentIds.contains(existingLog.getId())) {
+                            dbManager.deleteQuestionLog(existingLog.getId());
+                            deletedById++;
+                        }
+                    }
+                    int remainingToDelete = (existingCount - currentLogs.size()) - deletedById;
+                    for (int i = 0; i < remainingToDelete; i++) {
                         dbManager.deleteLastQuestionLogForSession(s.getId());
                     }
                 }

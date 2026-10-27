@@ -56,4 +56,17 @@ public class TimerDatabaseManagerTest {
         Assert.assertEquals("02:05.4", log.getFormattedDuration());
         Assert.assertEquals("02:05", log.getFormattedDurationMinutesSeconds());
     }
+
+    @Test
+    public void testQuestionLogOutcomeToggleContracts() {
+        com.example.timerapp.model.QuestionLog log = new com.example.timerapp.model.QuestionLog(
+                1L, 10L, 1, 60000L, 1000L, "TEST", "PHYSICS", "MEDIUM", "INCORRECT", 2, "CALC_ERROR", "Notes"
+        );
+        Assert.assertTrue(com.example.timerapp.data.analytics.OutcomeClassifier.isWrong(log.getOutcome()));
+
+        // Toggle outcome
+        com.example.timerapp.model.QuestionLog updated = log.withOutcome("CORRECT");
+        Assert.assertTrue(com.example.timerapp.data.analytics.OutcomeClassifier.isCorrect(updated.getOutcome()));
+        Assert.assertFalse(com.example.timerapp.data.analytics.OutcomeClassifier.isWrong(updated.getOutcome()));
+    }
 }

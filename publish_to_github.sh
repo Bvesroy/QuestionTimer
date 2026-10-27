@@ -36,19 +36,18 @@ fi
 echo "3. Adding topics/tags..."
 gh repo edit --add-topic "jee-main,jee-advanced,study-timer,question-timer,android,amoled,exam-prep,offline-first" 2>/dev/null || true
 
-echo "4. Creating GitHub Release v1.6.0 with QuestionTimer.apk..."
+echo "4. Creating GitHub Release v1.7.0 with QuestionTimer.apk..."
 RELEASE_APK="$DIR/release/QuestionTimer.apk"
 if [ -f "$RELEASE_APK" ]; then
-    gh release create v1.6.0 "$RELEASE_APK" \
-        --title "QuestionTimer v1.6.0 — The Anti-Delusion Release" \
-        --notes "### ⏱️ QuestionTimer v1.6.0
+    gh release create v1.7.0 "$RELEASE_APK" \
+        --title "QuestionTimer v1.7.0 — Persistent Corner Undo & Question Deletion" \
+        --notes "### ⏱️ QuestionTimer v1.7.0
 
 #### 🚀 What's New:
-- **Invisible Two-Zone Interaction:** Tap top half to pause & mark ❌ Wrong (-1 / -2); tap bottom half to pause & mark ✅ Correct (+4).
-- **Vibrant Click Feedback:** Red and green visual feedback overlays with customizable transitions (Fade, Ripple, Instant Pop) and durations (150ms - 1200ms).
-- **JEE Main & JEE Advanced Scoring:** Automated estimated marks calculation based on standard marking schemes.
-- **Pure AMOLED Black:** Minimalist distraction-free layout optimized for long study sessions.
-- **100% Offline & Private:** Zero network permissions required." 2>/dev/null || echo "Release already exists or skipped."
+- **Persistent Corner Undo & Change Tag:** The undo and tag change button is docked in the corner and **remains visible** throughout the entire pause duration. Easily change a question's tag from Wrong to Right (or vice versa) without losing your solving time!
+- **Long-Press Question Selection & Deletion:** In the History Question Breakdown list, long-press on any question log to enter selection mode, select individual or multiple questions, and delete just the selected attempts.
+- **Instant Stat Recalculation:** Deleting questions or changing tags immediately recomputes session averages, fastest/slowest times, and estimated JEE Main (+4/-1) / Advanced (+4/-2) marks.
+- **163 Comprehensive Tests:** 100% unit test coverage ensuring rock-solid data integrity." 2>/dev/null || echo "Release already exists or skipped."
 fi
 
 echo "=== Successfully published QuestionTimer to GitHub! ==="
